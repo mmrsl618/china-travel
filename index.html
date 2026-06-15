@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visit China Tips - Your Ultimate Travel Guide to China</title>
+  <meta name="description" content="Complete travel guide for visiting China. Learn about visas, payments, transportation, top destinations, and essential tips for a smooth trip.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red: #DE2910;
+      --gold: #FFDE00;
+      --dark: #1a1a2e;
+      --gray: #f5f5f5;
+      --text: #333;
+      --text-light: #666;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+      background: #fff;
+    }
+    /* Header */
+    header {
+      background: var(--dark);
+      color: #fff;
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--gold);
+      text-decoration: none;
+    }
+    .logo span { color: #fff; }
+    nav a {
+      color: #ccc;
+      text-decoration: none;
+      margin-left: 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--gold); }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, var(--dark) 0%, #16213e 100%);
+      color: #fff;
+      text-align: center;
+      padding: 5rem 1.5rem;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero p {
+      font-size: 1.1rem;
+      max-width: 650px;
+      margin: 0 auto 2rem;
+      color: #aaa;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--dark);
+      padding: 0.8rem 2rem;
+      border-radius: 6px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: transform 0.2s;
+    }
+    .cta-btn:hover { transform: translateY(-2px); }
+
+    /* Categories */
+    .categories {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+    .categories h2 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    .categories .subtitle {
+      text-align: center;
+      color: var(--text-light);
+      margin-bottom: 3rem;
+      font-size: 1rem;
+    }
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+    .cat-card {
+      background: var(--gray);
+      border-radius: 12px;
+      padding: 1.8rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.25s;
+      border: 2px solid transparent;
+    }
+    .cat-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .cat-card .icon { font-size: 2rem; margin-bottom: 0.6rem; }
+    .cat-card h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+    .cat-card p { font-size: 0.85rem; color: var(--text-light); }
+
+    /* Featured Article */
+    .featured {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+    .featured h2 {
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+    }
+    .featured-card {
+      background: var(--gray);
+      border-radius: 12px;
+      padding: 2rem;
+      text-decoration: none;
+      color: var(--text);
+      display: block;
+      transition: all 0.25s;
+    }
+    .featured-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .featured-card .tag {
+      background: var(--red);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+    .featured-card h3 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .featured-card p { font-size: 0.9rem; color: var(--text-light); }
+
+    /* Footer */
+    footer {
+      background: var(--dark);
+      color: #888;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--gold); text-decoration: none; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.8rem; }
+      nav a { margin-left: 1rem; font-size: 0.8rem; }
+      .cat-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">🇨🇳 Visit <span>China Tips</span></a>
+    <nav>
+      <a href="/guides/before-you-go.html">Before You Go</a>
+      <a href="/guides/cities.html">City Guides</a>
+      <a href="/guides/transportation.html">Transport</a>
+      <a href="/guides/payment.html">Payment</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Your Complete <span>China Travel</span> Guide</h1>
+  <p>Everything you need to know before visiting China. From visas and payments to the best routes and hidden gems — we've got you covered.</p>
+  <a href="/guides/before-you-go.html" class="cta-btn">Start Planning →</a>
+</section>
+
+<section class="categories">
+  <h2>What Are You Looking For?</h2>
+  <p class="subtitle">Practical guides written for first-time visitors to China</p>
+  <div class="cat-grid">
+
+    <a href="/guides/before-you-go.html" class="cat-card">
+      <div class="icon">📋</div>
+      <h3>Before You Go</h3>
+      <p>Visa, insurance, packing list, and what to prepare before your trip</p>
+    </a>
+
+    <a href="/guides/payment.html" class="cat-card">
+      <div class="icon">💳</div>
+      <h3>Payment & Apps</h3>
+      <p>How to use Alipay, WeChat Pay, and get a VPN before arrival</p>
+    </a>
+
+    <a href="/guides/transportation.html" class="cat-card">
+      <div class="icon">🚄</div>
+      <h3>Getting Around</h3>
+      <p>High-speed trains, subway, taxis, flights — complete transport guide</p>
+    </a>
+
+    <a href="/guides/cities.html" class="cat-card">
+      <div class="icon">🏙️</div>
+      <h3>City Guides</h3>
+      <p>Beijing, Shanghai, Chengdu, Xi'an, Chongqing and more</p>
+    </a>
+
+    <a href="/guides/itineraries.html" class="cat-card">
+      <div class="icon">🗺️</div>
+      <h3>Itineraries</h3>
+      <p>3-day, 5-day, 7-day and 14-day route plans for every traveler</p>
+    </a>
+
+    <a href="/guides/food.html" class="cat-card">
+      <div class="icon">🍜</div>
+      <h3>Food & Dining</h3>
+      <p>What to eat, how to order, and restaurant tips for foreigners</p>
+    </a>
+
+    <a href="/guides/safety.html" class="cat-card">
+      <div class="icon">🛡️</div>
+      <h3>Safety & Tips</h3>
+      <p>Is China safe? Language tips, scams to avoid, and emergency contacts</p>
+    </a>
+
+    <a href="/guides/connectivity.html" class="cat-card">
+      <div class="icon">📶</div>
+      <h3>Stay Connected</h3>
+      <p>Best VPNs, eSIMs, SIM cards and internet tips for China</p>
+    </a>
+
+  </div>
+</section>
+
+<section class="featured">
+  <h2>Start Here</h2>
+  <a href="/guides/before-you-go/ultimate-china-travel-guide.html" class="featured-card">
+    <span class="tag">Featured</span>
+    <h3>🇨🇳 China Travel Guide 2026: Everything You Need to Know</h3>
+    <p>The ultimate guide covering visas, payments, internet, transportation, top destinations, and insider tips for a smooth China trip.</p>
+  </a>
+</section>
+
+<footer>
+  <p>© 2026 Visit China Tips. All guides are for informational purposes. <a href="#">Privacy Policy</a></p>
+</footer>
+
+</body>
+</html>
