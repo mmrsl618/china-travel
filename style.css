@@ -12,6 +12,9 @@ body {
   color: var(--text);
   line-height: 1.6;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* ========== Header ========== */
@@ -260,6 +263,7 @@ footer {
   text-align: center;
   padding: 2rem 1.5rem;
   font-size: 0.85rem;
+  margin-top: auto;
 }
 footer a { color: var(--gold); text-decoration: none; }
 
