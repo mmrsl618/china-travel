@@ -8,6 +8,49 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <style>
+    /* Quick Access Cards */
+    .quick-access {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+    .quick-card {
+      border-radius: 12px;
+      padding: 2rem;
+      text-decoration: none;
+      color: #fff;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .quick-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .quick-card.safety {
+      background: linear-gradient(135deg, #1a8a5c 0%, #0d6b3f 100%);
+    }
+    .quick-card.visa-check {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+    .quick-card .qa-icon { font-size: 2.2rem; margin-bottom: 0.8rem; }
+    .quick-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .quick-card p { font-size: 0.88rem; color: rgba(255,255,255,0.85); line-height: 1.5; }
+    .quick-card .arrow {
+      position: absolute; right: 1.5rem; top: 50%;
+      transform: translateY(-50%); font-size: 1.5rem; opacity: 0.5;
+    }
+    @media (max-width: 640px) {
+      .quick-grid { grid-template-columns: 1fr; }
+      .quick-card { padding: 1.5rem; }
+    }
+  </style>
 </head>
 <body>
 
@@ -65,6 +108,24 @@
       <p>City guides and itinerary planning for every traveler</p>
     </a>
 
+  </div>
+</section>
+
+<!-- Quick Access: 2 highlighted cards -->
+<section class="quick-access">
+  <div class="quick-grid">
+    <a href="/guides/before-you-go.html#tab-tools" class="quick-card safety">
+      <div class="qa-icon">🛡️</div>
+      <h3>Stay Safe & Connected</h3>
+      <p>VPN, eSIM, safety tips, and emergency contacts — everything you need before arriving</p>
+      <span class="arrow">→</span>
+    </a>
+    <a href="/guides/before-you-go.html#tab-visa" class="quick-card visa-check">
+      <div class="qa-icon">🔍</div>
+      <h3>Do I Need a Visa?</h3>
+      <p>Check visa-free policies, 144-hour transit visa, and application steps</p>
+      <span class="arrow">→</span>
+    </a>
   </div>
 </section>
 
