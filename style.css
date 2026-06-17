@@ -311,6 +311,9 @@ footer a { color: var(--gold); text-decoration: none; }
 
   /* Hide desktop nav on mobile, show bottom nav */
   header nav { display: none; }
+
+  footer { display: none; }
+  body { padding-bottom: 70px; }
 }
 
 @media (max-width: 400px) {
