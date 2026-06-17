@@ -271,11 +271,12 @@ footer a { color: var(--gold); text-decoration: none; }
 .bottom-nav {
   display: none;
   position: fixed;
+  position: -webkit-sticky;
   bottom: 0;
   left: 0;
   right: 0;
   background: var(--dark);
-  z-index: 99;
+  z-index: 9999;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
 }
 .bottom-nav-inner {
