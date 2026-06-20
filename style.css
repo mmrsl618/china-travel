@@ -321,6 +321,9 @@ footer a { color: var(--gold); text-decoration: none; }
 .bottom-nav a .nav-icon { font-size: 1.25rem; margin-bottom: 0.15rem; }
 .bottom-nav .nav-item.current .nav-icon { font-size: 1.25rem; margin-bottom: 0.15rem; }
 
+/* Search overlay — default hidden, only visible on mobile when opened */
+.mobile-search-overlay { display: none; }
+
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
   .hero {
@@ -426,7 +429,7 @@ footer a { color: var(--gold); text-decoration: none; }
     background: rgba(255,255,255,0.1);
   }
 
-  footer { padding-bottom: 60px; }
+  footer { display: none; }
   .tab-btn { font-size: 0.75rem; padding: 0.4rem 0.6rem; white-space: nowrap; }
   body { padding-bottom: 50px; }
 }
