@@ -11,7 +11,7 @@
 ### 1. 文章内容非常长（9000+px）
 - 长文章自然把 footer 推到页面末尾
 - 用户滚动到文章底部才能看到 footer
-- 要求：**footer 始终在视口底部可见**
+- 要求：**页面本身不滚动，footer 始终在底部可见，只有中间内容区独立滚动**
 
 ### 2. 多层嵌套导致布局互相影响
 文章页面的 HTML 结构经过多次迭代：
@@ -66,9 +66,9 @@ Flexbox 有多条影响元素尺寸的规则，不同组合结果不同：
 
 ### CSS（`style.css`）
 ```css
-/* ===== body 必须固定高度 ===== */
+/* ===== body 高度锁死为视口高度 ===== */
 body.article-page {
-  height: 100vh;            /* 固定视口高度，别用 min-height */
+  height: 100vh;            /* 锁死，别用 min-height（允许撑大就没用了） */
   background: #fff;
 }
 
@@ -101,8 +101,8 @@ footer {
 ```
 
 **关键配合（缺一不可）：**
-- `body.article-page { height: 100vh }` + `body { display: flex; flex-direction: column }` → body 固定视口高度，子项垂直排列
-- `.article-page-inner { flex: 1; min-height: 0; overflow-y: auto }` → 内容区撑满剩余空间，过长时独立滚动
+- `body.article-page { height: 100vh }` + `body { display: flex; flex-direction: column }` → body 高度锁死为视口高度，子项垂直排列，页面整体不滚动
+- `.article-page-inner { flex: 1; min-height: 0; overflow-y: auto }` → 内容区撑满剩余空间，文章太长时在内容区内部独立滚动
 
 ### 提取函数（`admin_server.py`）
 ```python
