@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v2（精简版）
+"""admin_server.py — 管理后台 v3
 
 端口 8082 | ThreadingTCPServer
 
 工作流：
-  编辑 → 保存 → 发布上线（套壳 + git push）
-  已上线文章 → 编辑 → 保存 → 重新发布上线
+  草稿管理 ← 小二推送的稿件（中英文都在此）
+    → 编辑/查看 → 完成（自动套壳）→ 本地预览 → 已上线
 
-导航：
-  📂 文章列表 | 🚀 全部同步
+  已上线文章管理（5个板块导航）
+    → 编辑/查看 → 保存 → 重新发布 → 删除
 """
 import os, sys, re, json, shutil, urllib.parse
 import http.server, socketserver
@@ -81,47 +81,18 @@ def save_manifest(manifest):
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
 
-def set_article_status(fname, title, section, status):
+def set_article_manifest(fname, title, section, status):
     m = get_manifest()
     m[fname] = {'title': title, 'section': section, 'status': status}
     save_manifest(m)
 
-def remove_article(fname):
+def remove_article_manifest(fname):
     m = get_manifest()
     m.pop(fname, None)
     save_manifest(m)
 
 # =====================================================================
-#  初始化（创建目录 + 迁移旧数据）
-# =====================================================================
-def ensure_dirs():
-    os.makedirs(SRC_DIR, exist_ok=True)
-
-def migrate_existing():
-    """将已有的 articles/xxx.html 迁移到新系统"""
-    manifest = get_manifest()
-    changed = False
-    for f in os.listdir(ARTICLES_DIR):
-        if not f.endswith('.html') or f.startswith('.') or f in ('.src',):
-            continue
-        if f in manifest:
-            continue  # 已在 manifest 中
-        # 从文件名推断 section
-        section = 'before-you-go'  # 默认
-        # 尝试从文件内容提取标题
-        content, _ = read_file(f'articles/{f}')
-        title = f.replace('.html', '').replace('-', ' ').title()
-        if content:
-            tm = re.search(r'<title>(.*?)</title>', content, re.DOTALL)
-            title = tm.group(1).strip() if tm else title
-        manifest[f] = {'title': title, 'section': section, 'status': 'online'}
-        changed = True
-    if changed:
-        save_manifest(manifest)
-        print(f'[迁移] 已导入 {changed} 篇文章')
-
-# =====================================================================
-#  模板套壳（从当前代码提取，不变）
+#  模板套壳
 # =====================================================================
 def apply_master_template(content, title, desc, section=''):
     tpl_path = os.path.join(SITE_DIR, 'templates', 'article-master.html')
@@ -153,209 +124,11 @@ def apply_master_template(content, title, desc, section=''):
 #  标题处理
 # =====================================================================
 def extract_title(content):
-    """从 HTML 内容中提取第一个 <h1> 作为标题"""
     m = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.DOTALL)
-    if m:
-        return m.group(1).strip()
-    return ''
+    return m.group(1).strip() if m else ''
 
 def strip_title(content):
-    """去掉第一个 <h1> 及其前后空白"""
     return re.sub(r'\s*<h1[^>]*>.*?</h1>\s*', '', content, count=1, flags=re.DOTALL)
-
-# =====================================================================
-#  渲染
-# =====================================================================
-ADMIN_CSS = '''
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-       background: #eef0f5; color: #222; min-height: 100vh; display: flex; }
-.sidebar { width: 180px; background: #1a1a2e; color: #fff; display: flex; flex-direction: column;
-           flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-.sidebar-header { padding: 1rem 1rem 0.6rem; font-size: 0.85rem; font-weight: 700;
-                  letter-spacing: 0.3px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.sidebar-nav { padding: 0.4rem 0; flex: 1; }
-.nav-item { display: block; padding: 0.4rem 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.45);
-            text-decoration: none; transition: all 0.12s; border-left: 3px solid transparent; }
-.nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
-.nav-item.active { color: #FFDE00; background: rgba(255,222,0,0.06); border-left-color: #FFDE00; font-weight: 600; }
-.content { flex: 1; min-width: 0; padding: 1.5rem 2rem; max-width: 1000px; }
-.content-wide { display: flex; flex-direction: column; overflow: hidden; max-height: 100vh; }
-.content-wide .card { flex: 1; min-height: 0; }
-.card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1rem; }
-.card-title { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; padding: 0.9rem 1.2rem; border-bottom: 1px solid #f0f0f0; }
-.row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.2rem; border-bottom: 1px solid #f5f5f5; gap: 0.5rem; }
-.row:last-child { border-bottom: none; }
-.row:hover { background: #fafbfc; }
-.info { flex: 1; min-width: 0; }
-.name { font-size: 0.86rem; color: #222; font-weight: 500; }
-.path { font-size: 0.7rem; color: #aaa; margin-top: 0.06rem; }
-.badge { display: inline-block; font-size: 0.68rem; padding: 0.08rem 0.4rem; border-radius: 3px; font-weight: 600; margin-left: 0.4rem; }
-.status-badge { display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600; margin-left: 0.4rem; }
-.status-online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.status-draft { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-.actions { display: flex; gap: 0.3rem; flex-shrink: 0; flex-wrap: wrap; }
-.btn { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.28rem 0.6rem;
-       border-radius: 4px; font-size: 0.76rem; text-decoration: none; border: none;
-       cursor: pointer; font-weight: 500; transition: all 0.12s; line-height: 1.3; }
-.btn:hover { opacity: 0.85; }
-.btn-edit { background: #1a1a2e; color: #fff; }
-.btn-preview { background: #DE2910; color: #fff; }
-.btn-done { background: #28a745; color: #fff; }
-.btn-delete { background: #dc3545; color: #fff; }
-.btn-sync { background: #007bff; color: #fff; padding: 0.4rem 1rem; }
-.empty { text-align: center; padding: 3rem 1rem; font-size: 0.85rem; color: #aaa; }
-.msg { padding: 0.5rem 1rem; font-size: 0.8rem; border-radius: 4px; margin: 0.5rem 0; }
-.msg-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.msg-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-.edit-card { display: flex; flex-direction: column; min-height: 0; }
-.edit-card > form { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 1.2rem 1.2rem; }
-.editor-area { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; flex: 1; overflow-y: auto; min-height: 0; }
-.editor-inner { max-width: 700px; margin: 0 auto; font-size: 18px; line-height: 1.6; }
-.editor-inner:focus { outline: none; }
-.edit-actions { flex-shrink: 0; display: flex; gap: 0.5rem; padding: 0.8rem 0 0; align-items: center; }
-.edit-meta { flex-shrink: 0; display: flex; gap: 1rem; padding: 0.6rem 0 0; font-size: 0.8rem; align-items: center; }
-.edit-meta select { padding: 0.2rem 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 0.8rem; }
-'''
-
-def render_page(title, body_html):
-    return f'''<!DOCTYPE html><html lang="zh-CN"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>{title}</title><style>{ADMIN_CSS}</style></head><body>
-<div class="sidebar"><div class="sidebar-header">📋 管理后台</div>
-<div class="sidebar-nav">
-<a class="nav-item active" href="/admin">📂 文章管理</a>
-<a class="nav-item" href="/admin/sync">🔄 同步到线上</a>
-</div></div>
-<div class="content">{body_html}</div></body></html>'''
-
-def render_list_page(msg=None):
-    manifest = get_manifest()
-    rows = ''
-    for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
-        info = manifest[fname]
-        title = info.get('title', fname)
-        section = info.get('section', '')
-        status = info.get('status', 'draft')
-        section_label = GUIDE_SECTIONS.get(section, section)
-        if status == 'online':
-            status_html = '<span class="status-badge status-online">✅ 已上线</span>'
-        else:
-            status_html = '<span class="status-badge status-draft">📝 草稿</span>'
-        preview_url = f'/articles/{fname}'
-        edit_url = f'/admin/edit?path={fname}'
-        rows += f'''<div class="row">
-<div class="info">
-<div class="name">{html_escape(title)} {status_html}</div>
-<div class="path">文件名：{fname} · 所属板块：{section_label}</div>
-</div>
-<div class="actions">
-<a class="btn btn-edit" href="{edit_url}">✏️ 修改内容</a>
-<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览效果</a>
-<form method="POST" action="/admin/publish" style="display:inline"
-      onsubmit="return confirm('确定要发布这篇文章吗？\n\n发布流程：\n1. 自动套用网站模板\n2. \u4fdd\u5b58到 articles/ 目录\n3. 同步到 GitHub Pages 线上网站')">
-<input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-done">🚀 发布到线上</button></form>
-<form method="POST" action="/admin/delete" style="display:inline"
-      onsubmit="return confirm('确定要删除这篇文章吗？\n\n删除后本地文件和线上网站都会同步移除，不可恢复。')">
-<input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-delete">🗑 删除</button></form>
-</div></div>'''
-    if not rows:
-        rows = '<div class="empty">还没有文章，点下方按钮新建一篇</div>'
-
-    # 提示消息
-    msg_html = ''
-    if msg:
-        if msg.startswith('ok:'):
-            msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
-        elif msg.startswith('err:'):
-            msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
-        else:
-            msg_html = f'<div class="msg msg-success">{msg}</div>'
-
-    return f'''<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
-<h2 style="font-size:1rem;font-weight:700;color:#1a1a2e;">📂 文章管理</h2>
-<a class="btn btn-edit" href="/admin/edit" style="padding:0.35rem 0.8rem;font-size:0.8rem;">＋ 新建文章</a>
-</div>
-{msg_html}
-<div class="card">
-<div class="card-title">文章列表（共 {len(manifest)} 篇）</div>
-{rows}
-</div>
-<div style="font-size:0.75rem;color:#999;padding:0.5rem 0;text-align:center;">
-💡 操作说明：修改内容 → 保存 → 发布到线上（自动套模板+同步网站）
-</div>'''
-
-def render_edit_page(fname='', msg=None):
-    """render edit page for a given filename"""
-    manifest = get_manifest()
-    is_new = not fname or fname not in manifest
-    content = ''
-    section = 'before-you-go'
-    title = ''
-
-    if not is_new:
-        info = manifest[fname]
-        section = info.get('section', 'before-you-go')
-        title = info.get('title', '')
-        # 读 .src/ 源文件
-        src_content, err = read_file(f'articles/.src/{fname}')
-        if src_content:
-            content = src_content
-        else:
-            # fallback: 从已发布文章还原
-            pub_content, _ = read_file(f'articles/{fname}')
-            if pub_content:
-                # 去掉模板，提取内容区
-                m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
-                body = m.group(1).strip() if m else pub_content
-                content = f'<h1>{html_escape(title)}</h1>\n{body}' if title else body
-        if not content and title:
-            content = f'<h1>{html_escape(title)}</h1>'
-
-    msg_html = ''
-    if msg:
-        cls = 'msg-success' if msg[0] == 'ok' else 'msg-error'
-        icon = '✅' if msg[0] == 'ok' else '❌'
-        msg_html = f'<div class="{cls}">{icon} {msg[1]}</div>'
-
-    section_opts = ''.join(f'<option value="{k}"{" selected" if k==section else ""}>{v}</option>'
-                           for k, v in GUIDE_MAP)
-
-    body_html = content
-
-    js = '''<script>
-var ed=document.getElementById('editable');
-var hdn=document.getElementById('hdn-content');
-document.querySelector('form').addEventListener('submit',function(e){hdn.value=ed.innerHTML;});
-</script>'''
-
-    path_hidden = f'<input type="hidden" name="path" value="{fname}">' if fname else ''
-
-    page_title = '新建文章' if is_new else f'编辑文章：{fname}'
-    return render_page(
-        page_title,
-        f'''<div class="card edit-card">
-<div class="card-title">{"📝 新建文章" if is_new else f"✏️ 编辑文章：{fname}"}</div>
-<form method="POST" action="/admin/save">
-{path_hidden}
-<input type="hidden" name="content" id="hdn-content" value="">
-<div class="edit-meta">
-<label>所属板块：
-<select name="section">{section_opts}</select></label>
-<label>文件名：
-<input type="text" name="filename" value="{fname}" style="padding:0.2rem 0.4rem;border:1px solid #e0e0e0;border-radius:4px;font-size:0.8rem;width:200px;"{" readonly" if not is_new else ""}></label>
-<div style="font-size:0.76rem;color:#999;">💡 提示：在编辑器中用 &lt;h1&gt; 写标题，发布时自动提取标题到列表，正文不会重复显示标题。</div>
-</div>
-{msg_html}
-<div class="editor-area"><div class="editor-inner" id="editable" contenteditable="true" style="padding:1rem;">{body_html}</div></div>
-<div class="edit-actions">
-<button type="submit" class="btn btn-done" style="padding:0.4rem 1rem;font-size:0.85rem;">💾 保存内容</button>
-<a class="btn btn-edit" href="/admin" style="padding:0.4rem 1rem;">← 返回文章列表</a>
-</div>
-</form>
-{js}</div>''')
 
 # =====================================================================
 #  Git 同步
@@ -376,6 +149,252 @@ def git_push():
         return False, str(e)
 
 # =====================================================================
+#  渲染
+# =====================================================================
+ADMIN_CSS = '''
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+       background: #eef0f5; color: #222; min-height: 100vh; display: flex; }
+.sidebar { width: 180px; background: #1a1a2e; color: #fff; display: flex; flex-direction: column;
+           flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.sidebar-header { padding: 1rem 1rem 0.6rem; font-size: 0.85rem; font-weight: 700;
+                  letter-spacing: 0.3px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.sidebar-nav { padding: 0.4rem 0; flex: 1; }
+.nav-item { display: block; padding: 0.4rem 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.45);
+            text-decoration: none; transition: all 0.12s; border-left: 3px solid transparent; }
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.nav-item.active { color: #FFDE00; background: rgba(255,222,0,0.06); border-left-color: #FFDE00; font-weight: 600; }
+.nav-parent { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.nav-parent .arrow { font-size: 0.65rem; transition: transform 0.15s; margin-left: auto; opacity: 0.5; }
+.nav-parent.open .arrow { transform: rotate(90deg); }
+.nav-child { display: none; padding: 0; }
+.nav-child.show { display: block; }
+.nav-child .nav-item { padding: 0.3rem 1rem 0.3rem 2rem; font-size: 0.76rem; border-left: 3px solid transparent; }
+.nav-child .nav-item.active { color: #FFDE00; border-left-color: #FFDE00; background: transparent; }
+.content { flex: 1; min-width: 0; padding: 1.5rem 2rem; max-width: 1000px; }
+.content-wide { display: flex; flex-direction: column; overflow: hidden; max-height: 100vh; }
+.content-wide .card { flex: 1; min-height: 0; }
+.card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1rem; }
+.card-title { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; padding: 0.9rem 1.2rem; border-bottom: 1px solid #f0f0f0; }
+.row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.2rem; border-bottom: 1px solid #f5f5f5; gap: 0.5rem; }
+.row:last-child { border-bottom: none; }
+.row:hover { background: #fafbfc; }
+.info { flex: 1; min-width: 0; }
+.name { font-size: 0.86rem; color: #222; font-weight: 500; }
+.path { font-size: 0.7rem; color: #aaa; margin-top: 0.06rem; }
+.actions { display: flex; gap: 0.3rem; flex-shrink: 0; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.28rem 0.6rem;
+       border-radius: 4px; font-size: 0.76rem; text-decoration: none; border: none;
+       cursor: pointer; font-weight: 500; transition: all 0.12s; line-height: 1.3; }
+.btn:hover { opacity: 0.85; }
+.btn-edit { background: #1a1a2e; color: #fff; }
+.btn-preview { background: #DE2910; color: #fff; }
+.btn-done { background: #28a745; color: #fff; }
+.btn-delete { background: #dc3545; color: #fff; }
+.empty { text-align: center; padding: 3rem 1rem; font-size: 0.85rem; color: #aaa; }
+.msg { padding: 0.5rem 1rem; font-size: 0.8rem; border-radius: 4px; margin: 0.5rem 0; }
+.msg-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.msg-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.edit-card { display: flex; flex-direction: column; min-height: 0; }
+.edit-card > form { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 1.2rem 1.2rem; }
+.editor-area { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; flex: 1; overflow-y: auto; min-height: 0; }
+.editor-inner { max-width: 700px; margin: 0 auto; font-size: 18px; line-height: 1.6; }
+.editor-inner:focus { outline: none; }
+.edit-actions { flex-shrink: 0; display: flex; gap: 0.5rem; padding: 0.8rem 0 0; align-items: center; }
+.edit-meta { flex-shrink: 0; display: flex; gap: 1rem; padding: 0.6rem 0 0; font-size: 0.8rem; align-items: center; }
+.edit-meta select, .edit-meta input { padding: 0.2rem 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 0.8rem; }
+'''
+
+def sidebar_nav(current_page):
+    """生成左侧导航"""
+    html = f'<a class="nav-item{" active" if current_page=="draft" else ""}" href="/admin/draft">📄 草稿管理</a>'
+    # 已上线（汉堡式导航，5个板块）
+    is_online = current_page.startswith('done')
+    html += f'''<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">
+✅ 已上线 <span class="arrow">▸</span></div>'''
+    ch = ''.join(
+        f'<a class="nav-item {"active" if current_page==f"done-{k}" else ""}" href="/admin/done/{k}">{v}</a>'
+        for k, v in GUIDE_MAP)
+    html += f'<div class="nav-child{" show" if is_online else ""}" id="done-child">{ch}</div>'
+    # JavaScript 控制折叠
+    js = '''<script>
+function toggleDone(){
+  var c=document.getElementById('done-child');
+  c.previousElementSibling.classList.toggle('open');
+  c.classList.toggle('show');
+}
+</script>'''
+    return html + js
+
+def render_page(title, body_html, current_page='draft', wide=False):
+    nav = sidebar_nav(current_page)
+    content_cls = 'content content-wide' if wide else 'content'
+    return f'''<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{title}</title><style>{ADMIN_CSS}</style></head><body>
+<div class="sidebar"><div class="sidebar-header">📋 管理后台</div>
+<div class="sidebar-nav">{nav}</div></div>
+<div class="{content_cls}">{body_html}</div></body></html>'''
+
+# =====================================================================
+#  页面渲染函数
+# =====================================================================
+def render_draft_page(msg=None):
+    """草稿管理：列出所有未发布的稿件"""
+    manifest = get_manifest()
+    rows = ''
+    count = 0
+    for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
+        info = manifest[fname]
+        if info.get('status') == 'online':
+            continue  # 已上线的不显示在草稿区
+        count += 1
+        title = info.get('title', fname)
+        section = info.get('section', '')
+        section_label = GUIDE_SECTIONS.get(section, section)
+        preview_url = f'/articles/{fname}' if os.path.isfile(os.path.join(ARTICLES_DIR, fname)) else ''
+        edit_url = f'/admin/edit?path={fname}&from=draft'
+        preview_btn = f'<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>' if preview_url else ''
+        rows += f'''<div class="row">
+<div class="info">
+<div class="name">{html_escape(title)}</div>
+<div class="path">{fname} · {section_label}</div>
+</div>
+<div class="actions">
+<a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
+{preview_btn}
+<form method="POST" action="/admin/complete" style="display:inline"
+      onsubmit="return confirm('确认完成？将自动套壳、保存到 articles/、同步上线。')">
+<input type="hidden" name="path" value="{fname}">
+<button type="submit" class="btn btn-done">✓ 完成（套壳发布）</button></form>
+</div></div>'''
+    if count == 0:
+        rows = '<div class="empty">暂无草稿，小二还没有推送稿件过来</div>'
+    msg_html = ''
+    if msg:
+        if msg.startswith('ok:'):
+            msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
+        elif msg.startswith('err:'):
+            msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
+    return render_page('草稿管理',
+        f'''<div class="card">
+<div class="card-title">📄 草稿管理（共 {count} 篇）</div>
+{msg_html}
+{rows}
+</div>''', 'draft')
+
+def render_done_page(section_key, msg=None):
+    """已上线：按板块列出已发布的文章"""
+    manifest = get_manifest()
+    label = GUIDE_SECTIONS.get(section_key, section_key)
+    rows = ''
+    count = 0
+    for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
+        info = manifest[fname]
+        if info.get('status') != 'online' or info.get('section') != section_key:
+            continue
+        count += 1
+        title = info.get('title', fname)
+        preview_url = f'/articles/{fname}'
+        edit_url = f'/admin/edit?path={fname}&from=done-{section_key}'
+        rows += f'''<div class="row">
+<div class="info">
+<div class="name">{html_escape(title)}</div>
+<div class="path">{fname}</div>
+</div>
+<div class="actions">
+<a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
+<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>
+<form method="POST" action="/admin/republish" style="display:inline"
+      onsubmit="return confirm('确定要重新发布吗？将重新套壳并同步到线上。')">
+<input type="hidden" name="path" value="{fname}">
+<input type="hidden" name="section" value="{section_key}">
+<button type="submit" class="btn btn-done">🚀 重新发布</button></form>
+<form method="POST" action="/admin/delete" style="display:inline"
+      onsubmit="return confirm('确定要删除吗？将删除本地文件并同步到线上移除。')">
+<input type="hidden" name="path" value="{fname}">
+<button type="submit" class="btn btn-delete">🗑 删除</button></form>
+</div></div>'''
+    if count == 0:
+        rows = '<div class="empty">该板块暂无已发布的文章</div>'
+    msg_html = ''
+    if msg:
+        if msg.startswith('ok:'):
+            msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
+        elif msg.startswith('err:'):
+            msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
+    return render_page(f'已上线 - {label}',
+        f'''<div class="card">
+<div class="card-title">✅ 已上线 · {label}（共 {count} 篇）</div>
+{msg_html}
+{rows}
+</div>''', f'done-{section_key}')
+
+def render_edit_page(fname, return_to='draft', msg=None):
+    """编辑页，和原来一样——contenteditable + 滚动 + 底部按钮"""
+    manifest = get_manifest()
+    info = manifest.get(fname, {})
+    is_new = not info
+    content = ''
+    section = info.get('section', 'before-you-go')
+    title = info.get('title', '')
+
+    if not is_new:
+        # 优先读 .src/ 源文件
+        src_content, _ = read_file(f'articles/.src/{fname}')
+        if src_content:
+            content = src_content
+        else:
+            # 从已发布文章恢复
+            pub_content, _ = read_file(f'articles/{fname}')
+            if pub_content:
+                m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
+                body = m.group(1).strip() if m else pub_content
+                content = f'<h1>{html_escape(title)}</h1>\n{body}' if title else body
+        if not content and title:
+            content = f'<h1>{html_escape(title)}</h1>'
+
+    msg_html = ''
+    if msg:
+        cls = 'msg-success' if msg[0] == 'ok' else 'msg-error'
+        msg_html = f'<div class="{cls}">{"✅" if msg[0]=="ok" else "❌"} {msg[1]}</div>'
+
+    section_opts = ''.join(f'<option value="{k}"{" selected" if k==section else ""}>{v}</option>'
+                           for k, v in GUIDE_MAP)
+
+    js = '''<script>
+var ed=document.getElementById('editable');
+var hdn=document.getElementById('hdn-content');
+document.querySelector('form').addEventListener('submit',function(e){hdn.value=ed.innerHTML;});
+</script>'''
+
+    back_url = f'/admin/done/{return_to[5:]}' if return_to.startswith('done') else '/admin/draft'
+    back_label = '返回已上线' if return_to.startswith('done') else '返回草稿管理'
+    path_readonly = ' readonly' if not is_new else ''
+
+    return render_page(
+        f'编辑文章：{fname}',
+        f'''<div class="card edit-card">
+<div class="card-title">✏️ 编辑文章：{fname}</div>
+<form method="POST" action="/admin/save">
+<input type="hidden" name="path" value="{fname}">
+<input type="hidden" name="return_to" value="{return_to}">
+<input type="hidden" name="content" id="hdn-content" value="">
+<div class="edit-meta">
+<label>所属板块：<select name="section">{section_opts}</select></label>
+<label>文件名：<input type="text" name="filename" value="{fname}"{path_readonly}></label>
+<div style="font-size:0.76rem;color:#999;">💡 在编辑器中用 &lt;h1&gt; 写标题，发布时标题自动提取到列表，正文不重复显示。</div>
+</div>
+{msg_html}
+<div class="editor-area"><div class="editor-inner" id="editable" contenteditable="true" style="padding:1rem;">{content}</div></div>
+<div class="edit-actions">
+<button type="submit" class="btn btn-done" style="padding:0.4rem 1rem;font-size:0.85rem;">💾 保存内容</button>
+<a class="btn btn-edit" href="{back_url}" style="padding:0.4rem 1rem;">← {back_label}</a>
+</div>
+</form>
+{js}</div>''', return_to if return_to.startswith('done') else 'draft', wide=True)
+
+# =====================================================================
 #  Server
 # =====================================================================
 class AdminHandler(http.server.SimpleHTTPRequestHandler):
@@ -394,40 +413,56 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Location', loc)
         self.end_headers()
 
+    def redirect_msg(self, base_url, msg_type, msg_text):
+        """安全地构建带消息的重定向URL（自动URL编码）"""
+        params = urllib.parse.urlencode({'msg': f'{msg_type}:{msg_text}'})
+        sep = '&' if '?' in base_url else '?'
+        self.send_redirect(f'{base_url}{sep}{params}')
+
     # ---- GET ----
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         qs = urllib.parse.parse_qs(parsed.query)
-        msg = qs.get('msg', [None])[0]
 
-        if path == '/admin/sync':
-            ok, err = git_push()
-            text = err or '✅ 所有文章已同步到 GitHub Pages 线上网站'
-            status_cls = 'msg-success' if ok else 'msg-error'
-            icon = '✅' if ok else '❌'
-            self.send_html(render_page('同步结果',
-                f'<div class="card"><div class="card-title">🔄 同步结果</div>'
-                f'<div class="msg {status_cls}">{icon} {text}</div>'
-                f'<div style="padding:0.8rem 1.2rem;"><a class="btn btn-edit" href="/admin">← 返回文章列表</a></div></div>'))
+        # 根路径重定向到草稿管理
+        if path in ('/admin', '/admin/'):
+            self.send_redirect('/admin/draft')
             return
 
-        if path == '/admin':
+        # 草稿管理
+        if path == '/admin/draft':
             msg = qs.get('msg', [None])[0]
-            self.send_html(render_list_page(msg))
+            self.send_html(render_draft_page(msg))
             return
 
+        # 已上线板块
+        m = re.match(r'/admin/done/([\w-]+)/?$', path)
+        if m:
+            section = m.group(1)
+            if section not in GUIDE_SECTIONS:
+                self.send_redirect('/admin/draft')
+                return
+            msg = qs.get('msg', [None])[0]
+            self.send_html(render_done_page(section, msg))
+            return
+
+        # 编辑页
         if path == '/admin/edit':
             fname = qs.get('path', [None])[0] or ''
+            return_to = qs.get('from', ['draft'])[0]
             msg_data = qs.get('msg', [None])[0]
             msg_tuple = None
             if msg_data:
                 parts = msg_data.split(':', 1)
                 msg_tuple = (parts[0], parts[1]) if len(parts) > 1 else ('ok', msg_data)
-            self.send_html(render_edit_page(fname, msg_tuple))
+            if not fname:
+                self.send_redirect('/admin/draft')
+                return
+            self.send_html(render_edit_page(fname, return_to, msg_tuple))
             return
 
-        # 静态文件交给 SimpleHTTPRequestHandler
+        # 静态文件
         return super().do_GET()
 
     # ---- POST ----
@@ -438,39 +473,37 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
         body = self.rfile.read(length).decode('utf-8')
         data = urllib.parse.parse_qs(body)
 
+        # ---- 保存文章 ----
         if path == '/admin/save':
             content = data.get('content', [None])[0] or ''
             section = data.get('section', ['before-you-go'])[0]
             fname = data.get('filename', [None])[0] or data.get('path', [None])[0]
+            return_to = data.get('return_to', ['draft'])[0]
 
             if not fname:
-                self.send_redirect('/admin?msg=err:文件名不能为空')
+                self.redirect_msg('/admin/draft', 'err', '文件名不能为空')
                 return
             if not fname.endswith('.html'):
                 fname += '.html'
 
-            # 提取标题
             title = extract_title(content)
-
-            # 保存源文件（带标题）
             ok, err = write_file(f'articles/.src/{fname}', content)
             if not ok:
-                self.send_redirect(f'/admin?msg=err:保存失败:{err}')
+                self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'err', f'保存失败:{err}')
                 return
-
-            # 更新 manifest
-            set_article_status(fname, title or fname.replace('.html', '').replace('-', ' ').title(),
-                               section, 'draft')
-
-            self.send_redirect(f'/admin?msg=ok:文章已保存，可以继续修改或发布到线上')
+            # 更新 manifest（保存为草稿状态，除非已是上线状态）
+            manifest = get_manifest()
+            old_status = manifest.get(fname, {}).get('status', 'draft')
+            set_article_manifest(fname, title or fname, section, old_status)
+            self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'ok', '已保存成功')
             return
 
-        if path == '/admin/publish':
+        # ---- 完成（草稿→套壳发布上线） ----
+        if path == '/admin/complete':
             fname = data.get('path', [None])[0]
             if not fname:
-                self.send_redirect('/admin?msg=err:参数错误，请重试')
+                self.redirect_msg('/admin/draft', 'err', '参数错误')
                 return
-
             manifest = get_manifest()
             info = manifest.get(fname, {})
             section = info.get('section', 'before-you-go')
@@ -479,80 +512,98 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 读源文件
             src_content, err = read_file(f'articles/.src/{fname}')
             if not src_content:
-                # 没有源文件，从已发布文章取内容
+                self.redirect_msg('/admin/draft', 'err', f'找不到源文件:{err}')
+                return
+
+            content = src_content
+            t = extract_title(content)
+            if t:
+                title = t
+            body_content = strip_title(content)
+
+            # 套模板
+            final_html = apply_master_template(body_content, title, '', section)
+            ok, err = write_file(f'articles/{fname}', final_html)
+            if not ok:
+                self.redirect_msg('/admin/draft', 'err', f'套壳失败:{err}')
+                return
+
+            # git push
+            git_ok, git_err = git_push()
+
+            set_article_manifest(fname, title, section, 'online')
+            if git_ok:
+                self.redirect_msg('/admin/draft', 'ok', f'「{title}」已完成，已上线到网站')
+            else:
+                self.redirect_msg('/admin/draft', 'err', f'完成但同步失败:{git_err}')
+            return
+
+        # ---- 重新发布（已上线文章） ----
+        if path == '/admin/republish':
+            fname = data.get('path', [None])[0]
+            section = data.get('section', [None])[0] or 'before-you-go'
+            if not fname:
+                self.redirect_msg(f'/admin/done/{section}', 'err', '参数错误')
+                return
+            manifest = get_manifest()
+            info = manifest.get(fname, {})
+            title = info.get('title', '')
+
+            src_content, err = read_file(f'articles/.src/{fname}')
+            if not src_content:
                 pub_content, err = read_file(f'articles/{fname}')
                 if not pub_content:
-                    self.send_redirect(f'/admin?msg=err:找不到文章文件:{err}')
+                    self.redirect_msg(f'/admin/done/{section}', 'err', f'找不到文件:{err}')
                     return
                 m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
                 body = m.group(1).strip() if m else pub_content
-                content = body
+                body_content = body
             else:
-                content = src_content
-                # 从源文件重新提取标题
-                t = extract_title(content)
+                t = extract_title(src_content)
                 if t:
                     title = t
-                # 去掉标题
-                content = strip_title(content)
+                body_content = strip_title(src_content)
 
-            # 套模板
-            final_html = apply_master_template(content, title, '', section)
-
-            # 保存到 articles/
-            ok, err = write_file(f'articles/{fname}', final_html)
-            if not ok:
-                self.send_redirect(f'/admin?msg=err:套壳保存失败:{err}')
-                return
-
-            # git push
+            final_html = apply_master_template(body_content, title, '', section)
+            write_file(f'articles/{fname}', final_html)
             git_ok, git_err = git_push()
-
-            # 更新状态
-            set_article_status(fname, title, section, 'online')
-
+            set_article_manifest(fname, title, section, 'online')
             if git_ok:
-                self.send_redirect(f'/admin?msg=ok:文章「{title}」已发布到线上网站')
+                self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已重新发布到线上')
             else:
-                self.send_redirect(f'/admin?msg=err:文章已保存但同步线上失败:{git_err}')
+                self.redirect_msg(f'/admin/done/{section}', 'err', f'重新发布失败:{git_err}')
             return
 
+        # ---- 删除 ----
         if path == '/admin/delete':
             fname = data.get('path', [None])[0]
             if not fname:
-                self.send_redirect('/admin?msg=err:参数错误')
+                self.redirect_msg('/admin/draft', 'err', '参数错误')
                 return
-
-            # 取标题用于提示
             manifest = get_manifest()
-            title = manifest.get(fname, {}).get('title', fname)
+            info = manifest.get(fname, {})
+            title = info.get('title', fname)
+            section = info.get('section', 'before-you-go')
 
-            # 删源文件
             delete_file(f'articles/.src/{fname}')
-            # 删已发布文件
             delete_file(f'articles/{fname}')
-            # 删 manifest 记录
-            remove_article(fname)
-            # git push
+            remove_article_manifest(fname)
             git_ok, git_err = git_push()
 
             if git_ok:
-                self.send_redirect(f'/admin?msg=ok:文章「{title}」已删除，线上网站已同步移除')
+                self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已删除')
             else:
-                self.send_redirect(f'/admin?msg=err:文章已删除但同步线上失败:{git_err}')
+                self.redirect_msg(f'/admin/done/{section}', 'err', f'删除但同步失败:{git_err}')
             return
 
-        self.send_redirect('/admin')
+        self.send_redirect('/admin/draft')
 
 # =====================================================================
 #  启动
 # =====================================================================
 if __name__ == '__main__':
-    print(f'管理后台 v2 — http://localhost:{PORT}/admin')
-    print(f'  文章源文件: articles/.src/')
-    print(f'  成品: articles/')
-    ensure_dirs()
-    migrate_existing()
+    print(f'管理后台 v3 — http://localhost:{PORT}/admin')
+    os.makedirs(SRC_DIR, exist_ok=True)
     with socketserver.ThreadingTCPServer(('', PORT), AdminHandler) as httpd:
         try:
             httpd.serve_forever()
