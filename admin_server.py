@@ -44,6 +44,79 @@ def list_dir(rel_dir, ext=('.html', '.md')):
     items = sorted(os.listdir(full), key=lambda x: os.path.getmtime(os.path.join(full, x)), reverse=True)
     return [{'name': f, 'path': os.path.join(rel_dir, f).replace('\\', '/')} for f in items if f.endswith(ext)]
 
+# ===== 英文审稿 - 按guide分组 =====
+GUIDE_MAP = [
+    ('before-you-go',  'Before You Go'),
+    ('payment',        'Payment'),
+    ('transportation', 'Transportation'),
+    ('stay',           'Where to Stay'),
+    ('explore',        'Explore China'),
+]
+
+def list_en_reviews():
+    """扫描 articles/en/<guide>/ 下的待审文件，按 guide 分组返回"""
+    result = {}
+    for key, label in GUIDE_MAP:
+        d = os.path.join(SITE_DIR, 'articles', 'en', key)
+        if not os.path.isdir(d):
+            os.makedirs(d, exist_ok=True)
+        items = []
+        for f in os.listdir(d):
+            if f.endswith('.html') or f.endswith('.md'):
+                fp = os.path.join(d, f)
+                mtime = os.path.getmtime(fp)
+                items.append({'name': f, 'path': f'articles/en/{key}/{f}', 'mtime': mtime})
+        items.sort(key=lambda x: x['mtime'], reverse=True)
+        result[key] = {'label': label, 'items': items}
+    return result
+
+def extract_article_content(full_html):
+    """从英文审稿完整 HTML 中提取 <title>, <description>, 正文内容（不含 back-link）"""
+    title = ''
+    desc = ''
+    tm = re.search(r'<title>(.*?)</title>', full_html, re.DOTALL)
+    if tm: title = tm.group(1).strip()
+    dm = re.search(r'<meta\s+name="description"\s+content="([^"]*)"', full_html, re.DOTALL)
+    if dm: desc = dm.group(1).strip()
+    body_start = full_html.find('</header>')
+    if body_start == -1:
+        body_start = full_html.find('<body>')
+    if body_start != -1:
+        body_start = body_start + len('</header>')
+        rest = full_html[body_start:]
+        footer_pos = rest.find('<footer>')
+        if footer_pos != -1:
+            content = rest[:footer_pos].strip()
+        else:
+            content = rest.strip()
+    else:
+        content = full_html
+    # 移除 back-link（<a class="back-link">...</a>）
+    content = re.sub(
+        r'<a\s+[^>]*class="back-link"[^>]*>.*?</a>',
+        '', content, flags=re.DOTALL
+    )
+    # 剥离残留的旧页面结构标签（article-page/article-page-inner）
+    content = re.sub(r'\s*<div\s+class="article-page">\s*', '', content)
+    content = re.sub(r'\s*<div\s+class="article-page-inner">\s*', '', content)
+    content = re.sub(r'\s*</div>\s*<!--\s*/article-page-inner\s*-->\s*', '', content)
+    content = re.sub(r'\s*</div>\s*<!--\s*/article-page\s*-->\s*', '', content)
+    content = content.strip()
+    return title, desc, content
+
+def apply_master_template(content, title, desc):
+    """读模板，替换 __TITLE__, __DESCRIPTION__, __CONTENT__"""
+    tpl_path = os.path.join(SITE_DIR, 'templates', 'article-master.html')
+    try:
+        with open(tpl_path, 'r', encoding='utf-8') as f:
+            tpl = f.read()
+    except:
+        return content  # 回退
+    tpl = tpl.replace('__TITLE__', title)
+    tpl = tpl.replace('__DESCRIPTION__', desc)
+    tpl = tpl.replace('__CONTENT__', content)
+    return tpl
+
 # ===== CSS =====
 
 CSS = '''
@@ -166,6 +239,45 @@ function toggleDone(){
 <div class="{content_cls}">{m}{body_html}</div>{js}</body></html>'''
 
 def render_list_page(items, label, icon, has_done=False, done_url='', show_preview=True, base_from='/admin'):
+    if not items:
+        return f'<div class="card"><div class="card-title">{icon} {label}</div><div class="empty">暂无待审文章</div></div>'
+    rows = ''
+    for it in items:
+        preview = f'http://localhost:8080/{it["path"]}'
+        done_btn = ''
+        if has_done:
+            done_btn = f'<form method="POST" action="{done_url}" style="display:inline" onsubmit="return confirm(\'确认完成？\')"><input type="hidden" name="path" value="{it["path"]}"><button type="submit" class="btn btn-done">✓ 完成</button></form>'
+        preview_btn = f'<a class="btn btn-preview" href="{preview}" target="_blank">👁 预览</a>' if show_preview else ''
+        rows += f'''<div class="row">
+<div class="info"><div class="name">{it["name"]}</div><div class="path">{it["path"]}</div></div>
+<div class="actions">
+<a class="btn btn-edit" href="/admin/edit?path={it["path"]}&from={base_from}">✎ 编辑</a>
+{preview_btn}
+{done_btn}
+</div></div>'''
+    return f'<div class="card"><div class="card-title">{icon} {label}</div>{rows}</div>'
+
+def render_en_list_page(groups):
+    """按guide分组渲染英文待审列表"""
+    sections_html = ''
+    for key, label in GUIDE_MAP:
+        items = groups.get(key, {}).get('items', [])
+        rows = ''
+        if not items:
+            rows = '<div class="empty">暂无待审文章</div>'
+        else:
+            for it in items:
+                preview = f'http://localhost:8080/{it["path"]}'
+                rows += f'''<div class="row">
+<div class="info"><div class="name">{it["name"]}</div><div class="path">{it["path"]}</div></div>
+<div class="actions">
+<a class="btn btn-edit" href="/admin/edit?path={it["path"]}&from=/admin/en">✎ 编辑</a>
+<a class="btn btn-preview" href="{preview}" target="_blank">👁 预览</a>
+<form method="POST" action="/admin/en/done" style="display:inline" onsubmit="return confirm(\'确认完成？将套模板生成正式文章并移至已上架。\')"><input type="hidden" name="path" value="{it["path"]}"><button type="submit" class="btn btn-done">✓ 完成</button></form>
+</div></div>'''
+        sections_html += f'''<div style="padding:0.5rem 1.2rem 0.3rem;font-size:0.78rem;font-weight:600;color:#666;background:#f8f9fa;border-bottom:1px solid #eee;">📂 {label}</div>
+{rows}'''
+    return f'<div class="card"><div class="card-title">📝 英文待审稿</div>{sections_html}</div>'
     if not items:
         return f'<div class="card"><div class="card-title">{icon} {label}</div><div class="empty">暂无待审文章</div></div>'
     rows = ''
@@ -342,8 +454,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             body = render_list_page(items, '中文待审稿', '📄', has_done=True, done_url='/admin/zh/done', show_preview=False, base_from='/admin/zh')
             html = render_page('中文待审', body, 'zh')
         elif p == '/admin/en':
-            items = list_dir('articles/en', ('.html',))
-            body = render_list_page(items, '英文待审稿', '📝', has_done=True, done_url='/admin/en/done', base_from='/admin/en')
+            groups = list_en_reviews()
+            body = render_en_list_page(groups)
             html = render_page('英文待审', body, 'en')
         elif p == '/admin/done':
             # 跳转到第一个板块
@@ -412,7 +524,38 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             ok, err = move_file(path, path.replace('reviews/', 'reviews/_done/'))
             self.send_redirect('/admin/zh')
         elif parsed.path == '/admin/en/done':
-            ok, err = move_file(path, path.replace('articles/en/', 'articles/en/_done/'))
+            # 解析路径: articles/en/<guide>/<filename>.html
+            parts = path.replace('\\', '/').split('/')
+            # parts = ['articles', 'en', '<guide>', '<filename>']
+            if len(parts) >= 4 and parts[0] == 'articles' and parts[1] == 'en':
+                guide = parts[2]
+                fname = parts[-1]
+            else:
+                # 容错: 直接用旧逻辑
+                ok, err = move_file(path, path.replace('articles/en/', 'articles/en/_done/'))
+                self.send_redirect('/admin/en'); return
+
+            # 1. 读取英文审稿
+            content, err = read_file(path)
+            if err:
+                self.send_redirect('/admin/en?msg=读取失败:' + err); return
+
+            # 2. 提取 title, description, 正文
+            title, desc, article_body = extract_article_content(content)
+
+            # 3. 套模板
+            final_html = apply_master_template(article_body, title, desc)
+
+            # 4. 保存正式文章到 articles/<filename>.html
+            out_path = f'articles/{fname}'
+            ok, werr = write_file(out_path, final_html)
+            if not ok:
+                self.send_redirect('/admin/en?msg=写入失败:' + werr); return
+
+            # 5. 移动审稿到 _done/
+            done_path = f'articles/en/{guide}/_done/{fname}'
+            move_file(path, done_path)
+
             self.send_redirect('/admin/en')
         else:
             self.send_error(404)
@@ -474,7 +617,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     os.makedirs(os.path.join(SITE_DIR, 'reviews', '_done'), exist_ok=True)
-    os.makedirs(os.path.join(SITE_DIR, 'articles', 'en', '_done'), exist_ok=True)
+    # 创建各 guide 的英文审稿 _done 目录
+    for key, label in GUIDE_MAP:
+        os.makedirs(os.path.join(SITE_DIR, 'articles', 'en', key, '_done'), exist_ok=True)
     server = socketserver.TCPServer(('0.0.0.0', PORT), AdminHandler)
     print(f'✅ 后台启动: http://localhost:{PORT}/admin')
     try:
