@@ -73,6 +73,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* 右侧内容 */
 .content { flex: 1; min-width: 0; padding: 1.5rem 2rem; max-width: 1000px; }
+.content-wide { display: flex; flex-direction: column; overflow: hidden; max-height: 100vh; }
+.content-wide .card { flex: 1; min-height: 0; }
 .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1rem; }
 .card-title { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; padding: 0.9rem 1.2rem;
               border-bottom: 1px solid #f0f0f0; }
@@ -101,32 +103,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .msg-err { background: #fde8e8; color: #b22222; border: 1px solid #f5c6cb; }
 .empty { padding: 2rem; text-align: center; color: #bbb; font-size: 0.83rem; }
 
-/* 编辑页 */
-
-/* 子分类 tab 导航 */
-.sub-tabs { display: flex; gap: 0; border-bottom: 1px solid #e0e0e0; background: #fff;
-            border-radius: 8px 8px 0 0; overflow-x: auto; }
-.sub-tab { padding: 0.5rem 1rem; font-size: 0.8rem; cursor: pointer; border: none;
-            background: transparent; color: #888; font-weight: 500; white-space: nowrap;
-            border-bottom: 2px solid transparent; transition: all 0.12s; }
-.sub-tab:hover { color: #333; background: #fafbfc; }
-.sub-tab.active { color: #1a1a2e; border-bottom-color: #DE2910; font-weight: 600; background: #fff; }
-.sub-pane { display: none; padding: 0; }
-.sub-pane.active { display: block; }
-.edit-frame { border: none; width: 100%; height: 500px; border-radius: 4px; }
-.edit-tabs { display: flex; gap: 0; border-bottom: 1px solid #e0e0e0; }
-.edit-tab { padding: 0.4rem 0.9rem; font-size: 0.8rem; cursor: pointer; border: none;
-             background: transparent; color: #999; font-weight: 500;
-             border-bottom: 2px solid transparent; transition: all 0.12s; }
-.edit-tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; }
-.edit-tab:hover { color: #333; }
-.edit-pane { display: none; }
-.edit-pane.active { display: block; }
+/* 编辑页布局 */
+.edit-card { display: flex; flex-direction: column; min-height: 0; }
+.edit-card > form { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 1.2rem 1.2rem; }
+.edit-actions { flex-shrink: 0; display: flex; gap: 0.5rem; padding: 0.8rem 0 0; }
 .editor-area { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; }
 .editor-inner { max-width: 700px; margin: 0 auto; font-size: 18px; line-height: 1.6; }
 .editor-inner:focus { outline: none; }
-
-/* 编辑页 */
 
 /* 子分类 tab 导航 */
 .sub-tabs { display: flex; gap: 0; border-bottom: 1px solid #e0e0e0; background: #fff;
@@ -165,9 +148,10 @@ def sidebar_nav(current):
     html += f'<div class="nav-child{" show" if is_done else ""}" id="done-child">{ch}</div>'
     return html
 
-def render_page(title, body_html, current='zh', msg=None):
+def render_page(title, body_html, current='zh', msg=None, wide=False):
     m = f'<div class="msg msg-{msg[0]}">{msg[1]}</div>' if msg else ''
     nav = sidebar_nav(current)
+    content_cls = 'content content-wide' if wide else 'content'
     js = '''<script>
 function toggleDone(){
   var c=document.getElementById('done-child');
@@ -179,9 +163,9 @@ function toggleDone(){
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>{title}</title><style>{CSS}</style></head><body>
 <div class="sidebar"><div class="sidebar-header">📋 管理后台</div><div class="sidebar-nav">{nav}</div></div>
-<div class="content">{m}{body_html}</div>{js}</body></html>'''
+<div class="{content_cls}">{m}{body_html}</div>{js}</body></html>'''
 
-def render_list_page(items, label, icon, has_done=False, done_url=''):
+def render_list_page(items, label, icon, has_done=False, done_url='', show_preview=True, base_from='/admin'):
     if not items:
         return f'<div class="card"><div class="card-title">{icon} {label}</div><div class="empty">暂无待审文章</div></div>'
     rows = ''
@@ -190,85 +174,72 @@ def render_list_page(items, label, icon, has_done=False, done_url=''):
         done_btn = ''
         if has_done:
             done_btn = f'<form method="POST" action="{done_url}" style="display:inline" onsubmit="return confirm(\'确认完成？\')"><input type="hidden" name="path" value="{it["path"]}"><button type="submit" class="btn btn-done">✓ 完成</button></form>'
+        preview_btn = f'<a class="btn btn-preview" href="{preview}" target="_blank">👁 预览</a>' if show_preview else ''
         rows += f'''<div class="row">
 <div class="info"><div class="name">{it["name"]}</div><div class="path">{it["path"]}</div></div>
 <div class="actions">
-<a class="btn btn-edit" href="/admin/edit?path={it["path"]}">✎ 编辑</a>
-<a class="btn btn-preview" href="{preview}" target="_blank">👁 预览</a>
+<a class="btn btn-edit" href="/admin/edit?path={it["path"]}&from={base_from}">✎ 编辑</a>
+{preview_btn}
 {done_btn}
 </div></div>'''
     return f'<div class="card"><div class="card-title">{icon} {label}</div>{rows}</div>'
 
-def render_edit_page(path, msg=None):
+def render_edit_page(path, return_to='/admin', msg=None):
     content, err = read_file(path)
     if err:
         return None, err
-    body_html = ''
     is_md = path.endswith('.md')
-    if is_md:
-        body_html = content
-    else:
+    body_html = content if is_md else ''
+    if not is_md:
         m = re.search(r'<div class="article-page-inner">(.*?)</div>\s*</div>\s*(?:<footer|<div class="article-page)', content, re.DOTALL)
         body_html = m.group(1) if m else (content[content.find('<body>')+6:content.find('</body>')] if '<body>' in content else content)
-    preview_url = f'http://localhost:8080/{path}'
+
     msg_html = f'<div class="msg msg-{msg[0]}">{msg[1]}</div>' if msg else ''
+    save_btn_label = '💾 保存'
+    btn_style = 'padding:0.4rem 1.5rem;font-size:0.85rem;'
 
     if is_md:
-        edit_pane = f'''<form method="POST" action="/admin/save">
+        editor = f'''<textarea name="raw_content" style="width:100%;flex:1;border:1px solid #e0e0e0;padding:1rem;font-size:0.86rem;font-family:inherit;resize:none;outline:none;border-radius:4px;background:#fafafa;" spellcheck="false">{html_escape(content)}</textarea>'''
+        page = f'''<div class="card edit-card">
+<div style="padding:0.8rem 1.2rem;border-bottom:1px solid #eee;font-weight:600;font-size:0.85rem;flex-shrink:0;">{path}</div>
+<form method="POST" action="/admin/save" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:1.2rem;">
 <input type="hidden" name="path" value="{html_escape(path)}">
-<div class="editor-area" style="padding:0;">
-  <textarea name="raw_content" style="width:100%;min-height:400px;border:none;padding:1rem;font-size:0.86rem;font-family:inherit;resize:vertical;outline:none;" spellcheck="false">{html_escape(content)}</textarea>
+<input type="hidden" name="return_to" value="{return_to}">
+{editor}
+<div class="edit-actions">
+  <button type="submit" class="btn btn-done" style="{btn_style}">{save_btn_label}</button>
+  <a class="btn btn-edit" href="{return_to}" style="padding:0.4rem 1rem;background:#f0f0f0;color:#555;">← 返回</a>
 </div>
-<div style="display:flex;gap:0.5rem;padding-top:0.8rem;">
-  <button type="submit" class="btn btn-done" style="padding:0.4rem 1.5rem;font-size:0.85rem;">💾 保存</button>
-  <a class="btn btn-preview" href="{preview_url}" target="_blank" style="padding:0.4rem 1rem;">👁 预览</a>
-  <a class="btn btn-edit" href="/admin/zh" style="padding:0.4rem 1rem;background:#f0f0f0;color:#555;">← 返回</a>
-</div>
-</form>'''
-        page = f'''<div class="card">
-<div style="padding:0.8rem 1.2rem;border-bottom:1px solid #eee;font-weight:600;font-size:0.85rem;">{path}</div>
-<div style="padding:1.2rem;">{edit_pane}</div></div>'''
+</form></div>'''
     else:
-        edit_pane = f'''<form method="POST" action="/admin/save" id="edit-form">
+        editor = f'''<div class="editor-area" style="flex:1;overflow-y:auto;padding:1rem;">
+  <div class="editor-inner">
+    <div id="editable-content" contenteditable="true" style="outline:none;">{body_html}</div>
+  </div>
+</div>'''
+        page = f'''<div class="card edit-card">
+<div style="padding:0.8rem 1.2rem;border-bottom:1px solid #eee;font-weight:600;font-size:0.85rem;flex-shrink:0;">{path}</div>
+<form method="POST" action="/admin/save" id="edit-form" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:1.2rem;">
 <input type="hidden" name="path" value="{path}">
 <input type="hidden" name="content" id="hdn-content">
-<div class="editor-area" style="padding:1rem;max-height:450px;overflow-y:auto;">
-  <div class="editor-inner">
-    <div id="editable-content" contenteditable="true" style="outline:none;min-height:300px;">{body_html}</div>
-  </div>
+<input type="hidden" name="return_to" value="{return_to}">
+{editor}
+<div class="edit-actions">
+  <button type="submit" class="btn btn-done" style="{btn_style}">{save_btn_label}</button>
+  <a class="btn btn-edit" href="{return_to}" style="padding:0.4rem 1rem;background:#f0f0f0;color:#555;">← 返回</a>
 </div>
-<div style="margin-top:0.4rem;font-size:0.7rem;color:#999;">💡 直接点击文字修改</div>
-<div style="display:flex;gap:0.5rem;padding-top:0.8rem;">
-  <button type="submit" class="btn btn-done" style="padding:0.4rem 1.5rem;font-size:0.85rem;">💾 保存</button>
-  <a class="btn btn-preview" href="{preview_url}" target="_blank" style="padding:0.4rem 1rem;">👁 预览</a>
-  <a class="btn btn-edit" href="/admin/zh" style="padding:0.4rem 1rem;background:#f0f0f0;color:#555;">← 返回</a>
-</div>
-</form>'''
-        tabs = f'''<div class="edit-tabs">
-<button class="edit-tab active" onclick="showTab('view',this)">👁 预览</button>
-<button class="edit-tab" onclick="showTab('edit',this)">✎ 编辑</button>
-</div>
-<div id="pane-view" class="edit-pane active" style="padding-top:0.8rem;"><iframe class="edit-frame" src="{preview_url}"></iframe></div>
-<div id="pane-edit" class="edit-pane" style="padding-top:0.8rem;">{edit_pane}</div>'''
-        page = f'''<div class="card">
-<div style="padding:0.8rem 1.2rem;border-bottom:1px solid #eee;font-weight:600;font-size:0.85rem;">{path}</div>
-<div style="padding:0 1.2rem 1.2rem;">{tabs}</div></div>'''
+</form></div>'''
 
     js = '''<script>
-function showTab(n,b){
-  document.querySelectorAll('.edit-pane').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.edit-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('pane-'+n).classList.add('active'); if(b) b.classList.add('active');}
 var f=document.getElementById('edit-form');
 if(f) f.addEventListener('submit',function(){
   var e=document.getElementById('editable-content');
   if(e) document.getElementById('hdn-content').value=e.innerHTML;});</script>'''
 
-    # 判断 current 用
     cur = 'zh'
     if 'articles/en/' in path: cur = 'en'
     elif 'articles/' in path: cur = 'done-before-you-go'
-    return render_page('编辑', page + js, cur, msg), None
+    return render_page('编辑', msg_html + page + js, cur, wide=True), None
 
 def html_escape(s):
     return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
@@ -335,12 +306,12 @@ function showSyncStatus(){
         panes += f'<div class="sub-pane {act}" id="sub-pane-{idx}">'
         if t['articles']:
             for a in t['articles']:
-                preview = f'http://localhost:8080/articles/{a["file"]}'
+                online_url = f'https://mmrsl618.github.io/china-travel/articles/{a["file"]}'
                 panes += f'''<div class="row">
 <div class="info"><div class="name">{a["title"]}</div><div class="path">articles/{a["file"]}</div></div>
 <div class="actions">
-<a class="btn btn-edit" href="/admin/edit?path=articles/{a["file"]}">✎ 编辑</a>
-<a class="btn btn-preview" href="{preview}" target="_blank">👁 预览</a>
+<a class="btn btn-edit" href="/admin/edit?path=articles/{a["file"]}&from=/admin/done/{section_key}">✎ 编辑</a>
+<a class="btn btn-preview" href="{online_url}" target="_blank">👁 预览</a>
 </div></div>'''
         else:
             panes += '<div class="empty">暂无文章</div>'
@@ -368,11 +339,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
         if p == '/admin' or p == '/admin/zh':
             items = list_dir('reviews')
-            body = render_list_page(items, '中文待审稿', '📄', has_done=True, done_url='/admin/zh/done')
+            body = render_list_page(items, '中文待审稿', '📄', has_done=True, done_url='/admin/zh/done', show_preview=False, base_from='/admin/zh')
             html = render_page('中文待审', body, 'zh')
         elif p == '/admin/en':
             items = list_dir('articles/en', ('.html',))
-            body = render_list_page(items, '英文待审稿', '📝', has_done=True, done_url='/admin/en/done')
+            body = render_list_page(items, '英文待审稿', '📝', has_done=True, done_url='/admin/en/done', base_from='/admin/en')
             html = render_page('英文待审', body, 'en')
         elif p == '/admin/done':
             # 跳转到第一个板块
@@ -387,12 +358,13 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             html = render_page(f'已上架 - {section}', body, f'done-{section}')
         elif p == '/admin/edit':
             path = params.get('path', [None])[0]
-            if not path: self.send_redirect('/admin'); return
+            return_to = params.get('from', ['/admin'])[0]
+            if not path: self.send_redirect(return_to); return
             safe = os.path.normpath(os.path.join(SITE_DIR, path))
             if not safe.startswith(os.path.normpath(SITE_DIR)): self.send_error(403); return
-            html, err = render_edit_page(path)
+            html, err = render_edit_page(path, return_to=return_to)
             if err:
-                body = f'<div class="msg msg-err">{err}</div><a class="btn btn-edit" href="/admin">← 返回</a>'
+                body = f'<div class="msg msg-err">{err}</div><a class="btn btn-edit" href="{return_to}">← 返回</a>'
                 html = render_page('错误', body, 'zh')
         else:
             super().do_GET(); return
@@ -420,19 +392,22 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
         if parsed.path == '/admin/save':
             nc = data.get('content', [None])[0]
             rc = data.get('raw_content', [None])[0]
+            return_to = data.get('return_to', [None])[0] or '/admin'
             if nc is not None:
                 orig, err = read_file(path)
                 if err:
-                    html, _ = render_edit_page(path, ('err', f'读取失败: {err}'))
-                    self.send_html(html); return
+                    self.send_redirect(f'{return_to}?sync_msg=读取失败:{err}'); return
+                    return
                 new_file, count = re.subn(
                     r'(<div class="article-page-inner">)(.*?)(</div>\s*</div>\s*(?:<footer|<div class="article-page"))',
                     lambda m: m.group(1) + '\n' + nc + '\n' + m.group(3), orig, count=1, flags=re.DOTALL)
                 write_file(path, new_file if count > 0 else nc)
             elif rc is not None:
                 write_file(path, rc)
-            html, _ = render_edit_page(path, ('ok', '✅ 保存成功'))
-            self.send_html(html)
+            self.send_response(302)
+            self.send_header('Location', return_to)
+            self.end_headers()
+            return
         elif parsed.path == '/admin/zh/done':
             ok, err = move_file(path, path.replace('reviews/', 'reviews/_done/'))
             self.send_redirect('/admin/zh')
