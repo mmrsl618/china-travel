@@ -426,7 +426,7 @@ footer a { color: var(--gold); text-decoration: none; }
     background: rgba(255,255,255,0.1);
   }
 
-  footer { display: none; }
+  footer { padding-bottom: 60px; }
   .tab-btn { font-size: 0.75rem; padding: 0.4rem 0.6rem; white-space: nowrap; }
   body { padding-bottom: 50px; }
 }
