@@ -34,6 +34,29 @@ GUIDE_MAP = [
 ]
 GUIDE_SECTIONS = {k: v for k, v in GUIDE_MAP}
 
+# 二级导航（子分类）映射
+SUBCAT_MAP = {
+    'before-you-go': [
+        ('visa', 'Visa Policies'),
+        ('arrival', 'Arrival Guide'),
+        ('tools', 'Essential Tools'),
+    ],
+    'payment': [
+        ('methods', 'Payment Methods'),
+        ('tips', 'Practical Tips'),
+    ],
+    'transportation': [
+        ('trains', 'Trains'),
+        ('flights', 'Flights'),
+        ('local', 'Local'),
+    ],
+    'stay': [],
+    'explore': [
+        ('cities', 'City Guides'),
+        ('itineraries', 'Itineraries'),
+    ],
+}
+
 # =====================================================================
 #  文件操作
 # =====================================================================
@@ -81,9 +104,12 @@ def save_manifest(manifest):
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
 
-def set_article_manifest(fname, title, section, status):
+def set_article_manifest(fname, title, section, status, sub_category=''):
     m = get_manifest()
-    m[fname] = {'title': title, 'section': section, 'status': status}
+    entry = {'title': title, 'section': section, 'status': status}
+    if sub_category:
+        entry['sub_category'] = sub_category
+    m[fname] = entry
     save_manifest(m)
 
 def remove_article_manifest(fname):
@@ -94,7 +120,7 @@ def remove_article_manifest(fname):
 # =====================================================================
 #  模板套壳
 # =====================================================================
-def apply_master_template(content, title, desc, section=''):
+def apply_master_template(content, title, desc, section='', sub_category=''):
     tpl_path = os.path.join(SITE_DIR, 'templates', 'article-master.html')
     try:
         with open(tpl_path, 'r', encoding='utf-8') as f:
@@ -114,9 +140,36 @@ def apply_master_template(content, title, desc, section=''):
             nav_html += f'      <span class="crumb current">{lbl}</span>\n'
         else:
             nav_html += f'      <a href="{url}">{lbl}</a>\n'
+
+    # 面包屑
+    section_label = GUIDE_SECTIONS.get(section, section)
+    guids_url = f'../guides/{"-".join(section.split("-"))}.html'
+    if sub_category and section in SUBCAT_MAP:
+        sub_label = ''
+        for k, lbl in SUBCAT_MAP[section]:
+            if k == sub_category:
+                sub_label = lbl
+                break
+        if sub_label:
+            breadcrumb = f'''<div class="breadcrumb">
+<a href="../index.html">Home</a>
+<span class="sep">›</span>
+<a href="{guids_url}">{section_label}</a>
+<span class="sep">›</span>
+<span class="current">{sub_label}</span>
+</div>'''
+        else:
+            breadcrumb = ''
+    else:
+        breadcrumb = ''
+
     tpl = tpl.replace('__TITLE__', title)
     tpl = tpl.replace('__DESCRIPTION__', desc)
-    tpl = tpl.replace('__CONTENT__', content)
+    # 面包屑带内联样式
+    bc_container = f'''<div class="breadcrumb" style="font-size:0.85rem;color:#666;padding:0 0 1rem;margin:0 0 1rem;border-bottom:1px solid #eee;">
+{breadcrumb.strip()}
+</div>''' if breadcrumb else ''
+    tpl = tpl.replace('__CONTENT__', bc_container + '\n' + content)
     tpl = tpl.replace('__NAV__', nav_html)
     return tpl
 
@@ -338,6 +391,7 @@ def render_edit_page(fname, return_to='draft', msg=None):
     content = ''
     section = info.get('section', 'before-you-go')
     title = info.get('title', '')
+    sub_category = info.get('sub_category', '')
 
     if not is_new:
         # 优先读 .src/ 源文件
@@ -362,10 +416,23 @@ def render_edit_page(fname, return_to='draft', msg=None):
     section_opts = ''.join(f'<option value="{k}"{" selected" if k==section else ""}>{v}</option>'
                            for k, v in GUIDE_MAP)
 
+    subcat_list = SUBCAT_MAP.get(section, [])
+    subcat_opts = ''.join(f'<option value="{k}"{" selected" if k==sub_category else ""}>{v}</option>'
+                          for k, v in subcat_list)
+
     js = '''<script>
 var ed=document.getElementById('editable');
 var hdn=document.getElementById('hdn-content');
 document.querySelector('form').addEventListener('submit',function(e){hdn.value=ed.innerHTML;});
+// 动态更新子分类下拉
+var secSel=document.getElementById('sel-section');
+var subSel=document.getElementById('sel-subcat');
+var subMap=''' + json.dumps(SUBCAT_MAP, ensure_ascii=False) + ''';
+secSel.addEventListener('change',function(){
+  var k=this.value;
+  var subs=subMap[k]||[];
+  subSel.innerHTML=subs.length?subs.map(function(s){return '<option value="'+s[0]+'">'+s[1]+'</option>';}).join(''):'<option value="">（无）</option>';
+});
 </script>'''
 
     back_url = f'/admin/done/{return_to[5:]}' if return_to.startswith('done') else '/admin/draft'
@@ -381,7 +448,8 @@ document.querySelector('form').addEventListener('submit',function(e){hdn.value=e
 <input type="hidden" name="return_to" value="{return_to}">
 <input type="hidden" name="content" id="hdn-content" value="">
 <div class="edit-meta">
-<label>所属板块：<select name="section">{section_opts}</select></label>
+<label>所属板块：<select name="section" id="sel-section">{section_opts}</select></label>
+<label>子分类：<select name="sub_category" id="sel-subcat">{subcat_opts or '<option value="">（无）</option>'}</select></label>
 <label>文件名：<input type="text" name="filename" value="{fname}"{path_readonly}></label>
 <div style="font-size:0.76rem;color:#999;">💡 在编辑器中用 &lt;h1&gt; 写标题，发布时标题自动提取到列表，正文不重复显示。</div>
 </div>
@@ -479,6 +547,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             section = data.get('section', ['before-you-go'])[0]
             fname = data.get('filename', [None])[0] or data.get('path', [None])[0]
             return_to = data.get('return_to', ['draft'])[0]
+            sub_category = data.get('sub_category', [''])[0] or ''
 
             if not fname:
                 self.redirect_msg('/admin/draft', 'err', '文件名不能为空')
@@ -494,7 +563,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 更新 manifest（保存为草稿状态，除非已是上线状态）
             manifest = get_manifest()
             old_status = manifest.get(fname, {}).get('status', 'draft')
-            set_article_manifest(fname, title or fname, section, old_status)
+            set_article_manifest(fname, title or fname, section, old_status, sub_category)
             self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'ok', '已保存成功')
             return
 
@@ -521,8 +590,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 title = t
             body_content = strip_title(content)
 
-            # 套模板
-            final_html = apply_master_template(body_content, title, '', section)
+            # 套模板（含面包屑）
+            sub_category = info.get('sub_category', '')
+            final_html = apply_master_template(body_content, title, '', section, sub_category)
             ok, err = write_file(f'articles/{fname}', final_html)
             if not ok:
                 self.redirect_msg('/admin/draft', 'err', f'套壳失败:{err}')
@@ -531,7 +601,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # git push
             git_ok, git_err = git_push()
 
-            set_article_manifest(fname, title, section, 'online')
+            set_article_manifest(fname, title, section, 'online', sub_category)
             if git_ok:
                 self.redirect_msg('/admin/draft', 'ok', f'「{title}」已完成，已上线到网站')
             else:
@@ -548,6 +618,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             manifest = get_manifest()
             info = manifest.get(fname, {})
             title = info.get('title', '')
+            sub_category = info.get('sub_category', '')
 
             src_content, err = read_file(f'articles/.src/{fname}')
             if not src_content:
@@ -564,10 +635,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                     title = t
                 body_content = strip_title(src_content)
 
-            final_html = apply_master_template(body_content, title, '', section)
+            final_html = apply_master_template(body_content, title, '', section, sub_category)
             write_file(f'articles/{fname}', final_html)
             git_ok, git_err = git_push()
-            set_article_manifest(fname, title, section, 'online')
+            set_article_manifest(fname, title, section, 'online', sub_category)
             if git_ok:
                 self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已重新发布到线上')
             else:
