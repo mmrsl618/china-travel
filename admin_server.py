@@ -4,13 +4,14 @@
 左侧导航 + 右侧内容
 三界面：中文待审 / 英文待审 / 已上架（细分5板块）
 """
-import os, sys, re, shutil, urllib.parse, http.server, socketserver
+import os, sys, re, shutil, subprocess, urllib.parse, http.server, socketserver
 
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 sys.stdout.reconfigure(encoding='utf-8')
 
 SITE_DIR = r'E:\项目库\china-travel-website'
 PORT = 8082
+GIT_EXE = r'C:\Program Files\Git\bin\git.exe'
 
 def read_file(path):
     try:
@@ -92,6 +93,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn-preview:hover { background: #b8200c; }
 .btn-done { background: #16a34a; color: #fff; }
 .btn-done:hover { background: #15803d; }
+.btn-sync { background: #0366d6; color: #fff; }
+.btn-sync:hover { background: #0256b9; }
+.sync-status { font-size: 0.78rem; color: #555; padding: 0.4rem 1rem; background: #f6f8fa; border-radius: 4px; margin-top: 0.5rem; white-space: pre-wrap; }
 .msg { padding: 0.5rem 1rem; border-radius: 5px; margin-bottom: 0.8rem; font-size: 0.8rem; }
 .msg-ok { background: #e6f7ed; color: #1a7a3a; border: 1px solid #b8e6cc; }
 .msg-err { background: #fde8e8; color: #b22222; border: 1px solid #f5c6cb; }
@@ -271,8 +275,22 @@ def html_escape(s):
 
 # ===== 已上架：解析网站本地文件 =====
 
-def render_done_page(section_key):
+def render_done_page(section_key, sync_msg=None):
     """渲染已上架板块。section_key 必填，只显示该板块内容"""
+    sync_html = ''
+    if sync_msg:
+        sync_html = f'<div class="sync-status">{sync_msg}</div>'
+    sync_btn = f'''<form method="POST" action="/admin/sync" style="display:inline" onsubmit="showSyncStatus()">
+<button type="submit" class="btn btn-sync" id="sync-btn">🔄 同步到线上</button>
+</form>'''
+    sync_js = '''<script>
+function showSyncStatus(){
+  var b=document.getElementById('sync-btn');
+  b.textContent='⏳ 同步中...';
+  b.disabled=true;
+  b.style.opacity='0.6';
+}
+</script>'''
     guide_map = [
         ('before-you-go', 'Before You Go', 'before-you-go.html'),
         ('payment', 'Payment', 'payment.html'),
@@ -301,7 +319,7 @@ def render_done_page(section_key):
         tabs.append({'id': tab_id, 'name': tab_name, 'articles': articles})
     
     if not tabs:
-        return '<div class="card"><div class="empty">暂无分类</div></div>'
+        return f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;"><div></div>{sync_btn}</div>{sync_html}<div class="card"><div class="empty">暂无分类</div></div>{sync_js}'
     
     # 子分类 tab 导航
     tab_bar = '<div class="sub-tabs">'
@@ -335,7 +353,7 @@ function switchSubTab(idx,btn){
   btn.classList.add('active');
   document.getElementById('sub-pane-'+idx).classList.add('active');
 }</script>'''
-    return f'<div class="card">{tab_bar}{panes}</div>{tab_js}'
+    return f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;"><div></div>{sync_btn}</div>{sync_html}<div class="card">{tab_bar}{panes}</div>{tab_js}{sync_js}'
 
 # ===== HTTP Handler =====
 
@@ -364,7 +382,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             return
         elif p.startswith('/admin/done/'):
             section = p.split('/')[-1]
-            body = render_done_page(section)
+            sync_msg = params.get('sync_msg', [None])[0]
+            body = render_done_page(section, sync_msg)
             html = render_page(f'已上架 - {section}', body, f'done-{section}')
         elif p == '/admin/edit':
             path = params.get('path', [None])[0]
@@ -385,6 +404,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
+
+        if parsed.path == '/admin/sync':
+            self.send_html(self._do_sync())
+            return
+
         length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(length).decode('utf-8')
         data = urllib.parse.parse_qs(body)
@@ -417,6 +441,42 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.send_redirect('/admin/en')
         else:
             self.send_error(404)
+
+    def _do_sync(self):
+        """执行 Git 同步"""
+        cmds = [
+            [GIT_EXE, 'add', 'articles/', 'guides/', 'images/', 'reviews/', 'admin_server.py'],
+            [GIT_EXE, 'commit', '-m', f'admin: sync {__import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M")}'],
+            [GIT_EXE, 'pull', '--rebase', 'origin', 'main'],
+            [GIT_EXE, 'push', 'origin', 'main'],
+        ]
+        lines = []
+        for cmd in cmds:
+            try:
+                r = subprocess.run(cmd, capture_output=True, text=True, timeout=30, cwd=SITE_DIR)
+                out = (r.stdout or '').strip()
+                err = (r.stderr or '').strip()
+                if out: lines.append(f'$ {" ".join(cmd[-2:])}\n{out}')
+                if err and 'git' not in err.lower(): lines.append(f'⚠ {err}')
+                if r.returncode != 0:
+                    # commit 无变化不算失败
+                    if 'nothing to commit' in (r.stdout or '') or 'nothing to commit' in (r.stderr or ''):
+                        lines.append('→ 无新改动，跳过')
+                    elif 'Already up to date' in (r.stdout or '') or 'Already up to date' in (r.stderr or ''):
+                        lines.append('→ 已是最新')
+                    else:
+                        lines.append(f'❌ 失败 (code {r.returncode})')
+                        break
+            except subprocess.TimeoutExpired:
+                lines.append('⏰ 超时')
+                break
+            except Exception as e:
+                lines.append(f'❌ 错误: {e}')
+                break
+        msg = '\n'.join(lines)
+        section = self.path.split('/')[-1] if self.path.startswith('/admin/done/') else 'before-you-go'
+        body = render_done_page(section, msg)
+        return render_page('已上架 - 同步结果', body, f'done-{section}')
 
     def send_html(self, html):
         self.send_response(200)
