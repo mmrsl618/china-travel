@@ -444,9 +444,13 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
     def _do_sync(self):
         """执行 Git 同步"""
+        now = __import__("datetime").datetime.now().strftime("%Y%m%d_%H%M")
+        tag_name = f"auto-{now}"
         cmds = [
+            [GIT_EXE, 'tag', '-f', tag_name, '-m', f'Auto backup before admin sync at {now}'],
+            [GIT_EXE, 'push', 'origin', tag_name],
             [GIT_EXE, 'add', 'articles/', 'guides/', 'images/', 'reviews/', 'admin_server.py'],
-            [GIT_EXE, 'commit', '-m', f'admin: sync {__import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M")}'],
+            [GIT_EXE, 'commit', '-m', f'admin: sync {now}'],
             [GIT_EXE, 'pull', '--rebase', 'origin', 'main'],
             [GIT_EXE, 'push', 'origin', 'main'],
         ]
@@ -460,7 +464,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 if err and 'git' not in err.lower(): lines.append(f'⚠ {err}')
                 if r.returncode != 0:
                     # commit 无变化不算失败
-                    if 'nothing to commit' in (r.stdout or '') or 'nothing to commit' in (r.stderr or ''):
+                    # 自动备份标签推送失败不阻断同步
+                    if cmd[1] == 'push' and cmd[2] == 'origin' and cmd[3].startswith('auto-'):
+                        lines.append(f'⚠ 备份标签推送失败（不影响同步）')
+                    elif 'nothing to commit' in (r.stdout or '') or 'nothing to commit' in (r.stderr or ''):
                         lines.append('→ 无新改动，跳过')
                     elif 'Already up to date' in (r.stdout or '') or 'Already up to date' in (r.stderr or ''):
                         lines.append('→ 已是最新')
