@@ -191,8 +191,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .name { font-size: 0.86rem; color: #222; font-weight: 500; }
 .path { font-size: 0.7rem; color: #aaa; margin-top: 0.06rem; }
 .badge { display: inline-block; font-size: 0.68rem; padding: 0.08rem 0.4rem; border-radius: 3px; font-weight: 600; margin-left: 0.4rem; }
-.badge-draft { background: #fff3cd; color: #856404; }
-.badge-online { background: #d4edda; color: #155724; }
+.status-badge { display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600; margin-left: 0.4rem; }
+.status-online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.status-draft { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 .actions { display: flex; gap: 0.3rem; flex-shrink: 0; flex-wrap: wrap; }
 .btn { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.28rem 0.6rem;
        border-radius: 4px; font-size: 0.76rem; text-decoration: none; border: none;
@@ -204,7 +205,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn-delete { background: #dc3545; color: #fff; }
 .btn-sync { background: #007bff; color: #fff; padding: 0.4rem 1rem; }
 .empty { text-align: center; padding: 3rem 1rem; font-size: 0.85rem; color: #aaa; }
-.msg { padding: 0.5rem 1rem; font-size: 0.8rem; border-radius: 4px; margin: 0.5rem 1.2rem; }
+.msg { padding: 0.5rem 1rem; font-size: 0.8rem; border-radius: 4px; margin: 0.5rem 0; }
 .msg-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 .msg-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 .edit-card { display: flex; flex-direction: column; min-height: 0; }
@@ -223,12 +224,12 @@ def render_page(title, body_html):
 <title>{title}</title><style>{ADMIN_CSS}</style></head><body>
 <div class="sidebar"><div class="sidebar-header">📋 管理后台</div>
 <div class="sidebar-nav">
-<a class="nav-item active" href="/admin">📂 文章列表</a>
-<a class="nav-item" href="/admin/sync">🚀 全部同步</a>
+<a class="nav-item active" href="/admin">📂 文章管理</a>
+<a class="nav-item" href="/admin/sync">🔄 同步到线上</a>
 </div></div>
 <div class="content">{body_html}</div></body></html>'''
 
-def render_list_page():
+def render_list_page(msg=None):
     manifest = get_manifest()
     rows = ''
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
@@ -237,36 +238,53 @@ def render_list_page():
         section = info.get('section', '')
         status = info.get('status', 'draft')
         section_label = GUIDE_SECTIONS.get(section, section)
-        status_badge = f'<span class="badge badge-{"online" if status=="online" else "draft"}">{status}</span>'
+        if status == 'online':
+            status_html = '<span class="status-badge status-online">✅ 已上线</span>'
+        else:
+            status_html = '<span class="status-badge status-draft">📝 草稿</span>'
         preview_url = f'/articles/{fname}'
         edit_url = f'/admin/edit?path={fname}'
         rows += f'''<div class="row">
 <div class="info">
-<div class="name">{html_escape(title)} {status_badge}</div>
-<div class="path">{fname} · {section_label}</div>
+<div class="name">{html_escape(title)} {status_html}</div>
+<div class="path">文件名：{fname} · 所属板块：{section_label}</div>
 </div>
 <div class="actions">
-<a class="btn btn-edit" href="{edit_url}">✎ 编辑</a>
-<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>
+<a class="btn btn-edit" href="{edit_url}">✏️ 修改内容</a>
+<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览效果</a>
 <form method="POST" action="/admin/publish" style="display:inline"
-      onsubmit="return confirm('确认发布？将套壳后同步到 GitHub Pages。')">
+      onsubmit="return confirm('确定要发布这篇文章吗？\n\n发布流程：\n1. 自动套用网站模板\n2. \u4fdd\u5b58到 articles/ 目录\n3. 同步到 GitHub Pages 线上网站')">
 <input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-done">🚀 发布上线</button></form>
+<button type="submit" class="btn btn-done">🚀 发布到线上</button></form>
 <form method="POST" action="/admin/delete" style="display:inline"
-      onsubmit="return confirm('确认删除？将同时删除本地和线上的文章。')">
+      onsubmit="return confirm('确定要删除这篇文章吗？\n\n删除后本地文件和线上网站都会同步移除，不可恢复。')">
 <input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-delete">❌ 删除</button></form>
+<button type="submit" class="btn btn-delete">🗑 删除</button></form>
 </div></div>'''
     if not rows:
-        rows = '<div class="empty">暂无文章。去 <a href="/admin/edit">新建一篇</a></div>'
+        rows = '<div class="empty">还没有文章，点下方按钮新建一篇</div>'
 
-    new_btn = '<a class="btn btn-edit" href="/admin/edit" style="margin:0 1.2rem 0.8rem;">＋ 新建文章</a>'
+    # 提示消息
+    msg_html = ''
+    if msg:
+        if msg.startswith('ok:'):
+            msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
+        elif msg.startswith('err:'):
+            msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
+        else:
+            msg_html = f'<div class="msg msg-success">{msg}</div>'
 
-    return f'''<div class="card">
-<div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-<span>📂 文章列表</span></div>
-{new_btn}
+    return f'''<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+<h2 style="font-size:1rem;font-weight:700;color:#1a1a2e;">📂 文章管理</h2>
+<a class="btn btn-edit" href="/admin/edit" style="padding:0.35rem 0.8rem;font-size:0.8rem;">＋ 新建文章</a>
+</div>
+{msg_html}
+<div class="card">
+<div class="card-title">文章列表（共 {len(manifest)} 篇）</div>
 {rows}
+</div>
+<div style="font-size:0.75rem;color:#999;padding:0.5rem 0;text-align:center;">
+💡 操作说明：修改内容 → 保存 → 发布到线上（自动套模板+同步网站）
 </div>'''
 
 def render_edit_page(fname='', msg=None):
@@ -299,7 +317,8 @@ def render_edit_page(fname='', msg=None):
     msg_html = ''
     if msg:
         cls = 'msg-success' if msg[0] == 'ok' else 'msg-error'
-        msg_html = f'<div class="{cls}">{msg[1]}</div>'
+        icon = '✅' if msg[0] == 'ok' else '❌'
+        msg_html = f'<div class="{cls}">{icon} {msg[1]}</div>'
 
     section_opts = ''.join(f'<option value="{k}"{" selected" if k==section else ""}>{v}</option>'
                            for k, v in GUIDE_MAP)
@@ -314,23 +333,26 @@ document.querySelector('form').addEventListener('submit',function(e){hdn.value=e
 
     path_hidden = f'<input type="hidden" name="path" value="{fname}">' if fname else ''
 
+    page_title = '新建文章' if is_new else f'编辑文章：{fname}'
     return render_page(
-        f'{"新建" if is_new else "编辑"}文章',
+        page_title,
         f'''<div class="card edit-card">
-<div class="card-title">{"✎ 新建文章" if is_new else f"✎ 编辑: {fname}"}</div>
+<div class="card-title">{"📝 新建文章" if is_new else f"✏️ 编辑文章：{fname}"}</div>
 <form method="POST" action="/admin/save">
 {path_hidden}
 <input type="hidden" name="content" id="hdn-content" value="">
 <div class="edit-meta">
-<label>板块：<select name="section">{section_opts}</select></label>
-<label>文件名：<input type="text" name="filename" value="{fname}" style="padding:0.2rem 0.4rem;border:1px solid #e0e0e0;border-radius:4px;font-size:0.8rem;width:200px;"{" readonly" if not is_new else ""}></label>
-<div style="font-size:0.76rem;color:#999;">提示：在编辑器中书写 <b>&lt;h1&gt;</b> 标题，发布时自动提取。</div>
+<label>所属板块：
+<select name="section">{section_opts}</select></label>
+<label>文件名：
+<input type="text" name="filename" value="{fname}" style="padding:0.2rem 0.4rem;border:1px solid #e0e0e0;border-radius:4px;font-size:0.8rem;width:200px;"{" readonly" if not is_new else ""}></label>
+<div style="font-size:0.76rem;color:#999;">💡 提示：在编辑器中用 &lt;h1&gt; 写标题，发布时自动提取标题到列表，正文不会重复显示标题。</div>
 </div>
 {msg_html}
 <div class="editor-area"><div class="editor-inner" id="editable" contenteditable="true" style="padding:1rem;">{body_html}</div></div>
 <div class="edit-actions">
-<button type="submit" class="btn btn-done">💾 保存</button>
-<a class="btn btn-edit" href="/admin">← 返回列表</a>
+<button type="submit" class="btn btn-done" style="padding:0.4rem 1rem;font-size:0.85rem;">💾 保存内容</button>
+<a class="btn btn-edit" href="/admin" style="padding:0.4rem 1rem;">← 返回文章列表</a>
 </div>
 </form>
 {js}</div>''')
@@ -381,16 +403,18 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/admin/sync':
             ok, err = git_push()
-            status = 'ok' if ok else 'err'
-            text = err or '同步成功'
+            text = err or '✅ 所有文章已同步到 GitHub Pages 线上网站'
+            status_cls = 'msg-success' if ok else 'msg-error'
+            icon = '✅' if ok else '❌'
             self.send_html(render_page('同步结果',
-                f'<div class="card"><div class="card-title">🚀 同步结果</div>'
-                f'<div class="msg msg-{"success" if ok else "error"}">{text}</div>'
-                f'<div style="padding:0.8rem 1.2rem;"><a class="btn btn-edit" href="/admin">← 返回</a></div></div>'))
+                f'<div class="card"><div class="card-title">🔄 同步结果</div>'
+                f'<div class="msg {status_cls}">{icon} {text}</div>'
+                f'<div style="padding:0.8rem 1.2rem;"><a class="btn btn-edit" href="/admin">← 返回文章列表</a></div></div>'))
             return
 
         if path == '/admin':
-            self.send_html(render_list_page())
+            msg = qs.get('msg', [None])[0]
+            self.send_html(render_list_page(msg))
             return
 
         if path == '/admin/edit':
@@ -431,20 +455,20 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 保存源文件（带标题）
             ok, err = write_file(f'articles/.src/{fname}', content)
             if not ok:
-                self.send_redirect(f'/admin/edit?path={fname}&msg=err:保存失败:{err}')
+                self.send_redirect(f'/admin?msg=err:保存失败:{err}')
                 return
 
             # 更新 manifest
             set_article_status(fname, title or fname.replace('.html', '').replace('-', ' ').title(),
                                section, 'draft')
 
-            self.send_redirect(f'/admin/edit?path={fname}&msg=ok:已保存')
+            self.send_redirect(f'/admin?msg=ok:文章已保存，可以继续修改或发布到线上')
             return
 
         if path == '/admin/publish':
             fname = data.get('path', [None])[0]
             if not fname:
-                self.send_redirect('/admin?msg=err:参数错误')
+                self.send_redirect('/admin?msg=err:参数错误，请重试')
                 return
 
             manifest = get_manifest()
@@ -458,7 +482,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 # 没有源文件，从已发布文章取内容
                 pub_content, err = read_file(f'articles/{fname}')
                 if not pub_content:
-                    self.send_redirect(f'/admin?msg=err:找不到文章:{err}')
+                    self.send_redirect(f'/admin?msg=err:找不到文章文件:{err}')
                     return
                 m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
                 body = m.group(1).strip() if m else pub_content
@@ -478,7 +502,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 保存到 articles/
             ok, err = write_file(f'articles/{fname}', final_html)
             if not ok:
-                self.send_redirect(f'/admin?msg=err:保存失败:{err}')
+                self.send_redirect(f'/admin?msg=err:套壳保存失败:{err}')
                 return
 
             # git push
@@ -487,12 +511,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 更新状态
             set_article_status(fname, title, section, 'online')
 
-            status = 'ok' if git_ok else 'err'
-            text = f'已发布 {fname}'
-            if git_err:
-                text += f'，但同步失败:{git_err}'
-
-            self.send_redirect(f'/admin?msg={status}:{text}')
+            if git_ok:
+                self.send_redirect(f'/admin?msg=ok:文章「{title}」已发布到线上网站')
+            else:
+                self.send_redirect(f'/admin?msg=err:文章已保存但同步线上失败:{git_err}')
             return
 
         if path == '/admin/delete':
@@ -500,6 +522,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if not fname:
                 self.send_redirect('/admin?msg=err:参数错误')
                 return
+
+            # 取标题用于提示
+            manifest = get_manifest()
+            title = manifest.get(fname, {}).get('title', fname)
 
             # 删源文件
             delete_file(f'articles/.src/{fname}')
@@ -510,10 +536,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # git push
             git_ok, git_err = git_push()
 
-            text = f'已删除 {fname}'
-            if git_err:
-                text += f'，但同步失败:{git_err}'
-            self.send_redirect(f'/admin?msg={text}')
+            if git_ok:
+                self.send_redirect(f'/admin?msg=ok:文章「{title}」已删除，线上网站已同步移除')
+            else:
+                self.send_redirect(f'/admin?msg=err:文章已删除但同步线上失败:{git_err}')
             return
 
         self.send_redirect('/admin')
