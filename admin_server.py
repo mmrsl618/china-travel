@@ -10,7 +10,7 @@
   已上线文章管理（5个板块导航）
     → 编辑/查看 → 保存 → 重新发布 → 删除
 """
-import os, sys, re, json, shutil, urllib.parse
+import os, sys, re, json, urllib.parse
 import http.server, socketserver
 import subprocess
 
@@ -141,35 +141,9 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
         else:
             nav_html += f'      <a href="{url}">{lbl}</a>\n'
 
-    # 面包屑
-    section_label = GUIDE_SECTIONS.get(section, section)
-    guids_url = f'../guides/{"-".join(section.split("-"))}.html'
-    if sub_category and section in SUBCAT_MAP:
-        sub_label = ''
-        for k, lbl in SUBCAT_MAP[section]:
-            if k == sub_category:
-                sub_label = lbl
-                break
-        if sub_label:
-            breadcrumb = f'''<div class="breadcrumb">
-<a href="../index.html">Home</a>
-<span class="sep">›</span>
-<a href="{guids_url}">{section_label}</a>
-<span class="sep">›</span>
-<span class="current">{sub_label}</span>
-</div>'''
-        else:
-            breadcrumb = ''
-    else:
-        breadcrumb = ''
-
     tpl = tpl.replace('__TITLE__', title)
     tpl = tpl.replace('__DESCRIPTION__', desc)
-    # 面包屑带内联样式
-    bc_container = f'''<div class="breadcrumb" style="font-size:0.85rem;color:#666;padding:0 0 1rem;margin:0 0 1rem;border-bottom:1px solid #eee;">
-{breadcrumb.strip()}
-</div>''' if breadcrumb else ''
-    tpl = tpl.replace('__CONTENT__', bc_container + '\n' + content)
+    tpl = tpl.replace('__CONTENT__', content)
     tpl = tpl.replace('__NAV__', nav_html)
     return tpl
 
@@ -216,16 +190,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .nav-item { display: block; padding: 0.4rem 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.45);
             text-decoration: none; transition: all 0.12s; border-left: 3px solid transparent; }
 .nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
-.nav-item.active { color: #FFDE00; background: rgba(255,222,0,0.06); border-left-color: #FFDE00; font-weight: 600; }
+.nav-item.active { background: rgba(255,222,0,0.06); border-left-color: #FFDE00; }
 .nav-parent { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
 .nav-parent .arrow { font-size: 0.65rem; transition: transform 0.15s; margin-left: auto; opacity: 0.5; }
 .nav-parent.open .arrow { transform: rotate(90deg); }
 .nav-child { display: none; padding: 0; }
 .nav-child.show { display: block; }
-.nav-child .nav-item { padding: 0.3rem 1rem 0.3rem 2rem; font-size: 0.76rem; border-left: 3px solid transparent; }
-.nav-child .nav-item.active { color: #FFDE00; border-left-color: #FFDE00; background: transparent; }
+.nav-sub-parent { display: flex; align-items: center; cursor: pointer; padding: 0.3rem 1rem 0.3rem 2rem; font-size: 0.76rem; color: rgba(255,255,255,0.45); border-left: 3px solid transparent; transition: all 0.12s; }
+.nav-sub-parent:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.nav-sub-parent.active { background: rgba(255,222,0,0.06); border-left-color: #FFDE00; }
+/* 无子分类的板块链接，跟 nav-sub-parent 保持一致 */
+.nav-section-link { display: flex; align-items: center; padding: 0.3rem 1rem 0.3rem 2rem; font-size: 0.76rem; color: rgba(255,255,255,0.45); border-left: 3px solid transparent; text-decoration: none; transition: all 0.12s; }
+.nav-section-link:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.nav-section-link.active { background: rgba(255,222,0,0.06); border-left-color: #FFDE00; }
+.nav-section-link .arrow-sub { visibility: hidden; display: inline-block; width: 0.55rem; margin-right: 0.4rem; }
+.nav-sub-parent .arrow-sub { font-size: 0.55rem; transition: transform 0.15s; margin-right: 0.4rem; opacity: 0.5; display: inline-block; }
+.nav-sub-parent.open .arrow-sub { transform: rotate(90deg); }
+.nav-sub-child { display: none; }
+.nav-sub-child.show { display: block; }
+.nav-sub-child .nav-item.sub { padding: 0.25rem 1rem 0.25rem 3.5rem; font-size: 0.72rem; border-left: 3px solid transparent; color: rgba(255,255,255,0.35); text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 子分类更靠右，视觉层次更清晰 */
+.nav-sub-child .nav-item.sub:hover { color: #fff; background: rgba(255,255,255,0.03); }
+.nav-sub-child .nav-item.sub.active { color: #FFDE00; border-left-color: #FFDE00; background: transparent; font-weight: 500; }
 .content { flex: 1; min-width: 0; padding: 1.5rem 2rem; max-width: 1000px; }
-.content-wide { display: flex; flex-direction: column; overflow: hidden; max-height: 100vh; }
+.content-wide { display: flex; flex-direction: column; overflow: hidden; max-height: 100vh; max-width: none; }
 .content-wide .card { flex: 1; min-height: 0; }
 .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 1rem; }
 .card-title { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; padding: 0.9rem 1.2rem; border-bottom: 1px solid #f0f0f0; }
@@ -251,12 +239,38 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .edit-card { display: flex; flex-direction: column; min-height: 0; }
 .edit-card > form { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0 1.2rem 1.2rem; }
 .editor-area { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; flex: 1; overflow-y: auto; min-height: 0; }
-.editor-inner { max-width: 700px; margin: 0 auto; font-size: 18px; line-height: 1.6; }
+.editor-inner { max-width: 900px; margin: 0 auto; font-size: 18px; line-height: 1.6; padding: 1rem; min-height: 300px; }
 .editor-inner:focus { outline: none; }
 .edit-actions { flex-shrink: 0; display: flex; gap: 0.5rem; padding: 0.8rem 0 0; align-items: center; }
 .edit-meta { flex-shrink: 0; display: flex; gap: 1rem; padding: 0.6rem 0 0; font-size: 0.8rem; align-items: center; }
 .edit-meta select, .edit-meta input { padding: 0.2rem 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 0.8rem; }
 '''
+
+def _section_nav_html(section_key, section_label, current_page):
+    """生成一个板块的导航HTML（含二级子分类折叠）"""
+    subs = SUBCAT_MAP.get(section_key, [])
+    page = f'done-{section_key}'
+    active = ' active' if current_page.startswith(page) else ''
+    # 从 current_page 解析子分类（格式：done-{section}-{sub}）
+    sub_active = ''
+    if current_page.startswith(page + '-'):
+        sub_active = current_page[len(page)+1:]
+
+    if not subs:
+        # 无子分类，直接链接到板块页（加一个隐藏的箭头占位符，保证文字对齐）
+        return f'<a class="nav-section-link{active}" href="/admin/done/{section_key}"><span class="arrow-sub" aria-hidden="true"></span>{section_label}</a>\n'
+
+    # 有子分类 → 可折叠的二级导航
+    is_open = bool(active)
+    sec_indent = '    '
+    html = f'{sec_indent}<div class="nav-item nav-sub-parent{active}{" open" if is_open else ""}" onclick="toggleSubcat(\'{section_key}\')">'
+    html += f'<span class="arrow-sub">\u25b8</span> {section_label}</div>\n'
+    html += f'{sec_indent}<div class="nav-sub-child{" show" if is_open else ""}" id="sub-{section_key}">\n'
+    for k, lbl in subs:
+        sub_active_cls = ' active' if sub_active == k else ''
+        html += f'{sec_indent}  <a class="nav-item sub{sub_active_cls}" href="/admin/done/{section_key}?sub={k}">{lbl}</a>\n'
+    html += f'{sec_indent}</div>\n'
+    return html
 
 def sidebar_nav(current_page):
     """生成左侧导航"""
@@ -266,13 +280,19 @@ def sidebar_nav(current_page):
     html += f'''<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">
 ✅ 已上线 <span class="arrow">▸</span></div>'''
     ch = ''.join(
-        f'<a class="nav-item {"active" if current_page==f"done-{k}" else ""}" href="/admin/done/{k}">{v}</a>'
+        _section_nav_html(k, v, current_page)
         for k, v in GUIDE_MAP)
     html += f'<div class="nav-child{" show" if is_online else ""}" id="done-child">{ch}</div>'
-    # JavaScript 控制折叠
+    # JavaScript 控制折叠（两层折叠）
     js = '''<script>
 function toggleDone(){
   var c=document.getElementById('done-child');
+  c.previousElementSibling.classList.toggle('open');
+  c.classList.toggle('show');
+}
+function toggleSubcat(id){
+  var c=document.getElementById('sub-'+id);
+  if(!c)return;
   c.previousElementSibling.classList.toggle('open');
   c.classList.toggle('show');
 }
@@ -336,20 +356,30 @@ def render_draft_page(msg=None):
 {rows}
 </div>''', 'draft')
 
-def render_done_page(section_key, msg=None):
-    """已上线：按板块列出已发布的文章"""
+def render_done_page(section_key, sub='', msg=None):
+    """已上线：按板块列出已发布的文章，可选按子分类过滤"""
     manifest = get_manifest()
     label = GUIDE_SECTIONS.get(section_key, section_key)
     rows = ''
     count = 0
+    # 如果有子分类过滤，显示子分类名
+    sub_label = ''
+    if sub:
+        for k, lbl in SUBCAT_MAP.get(section_key, []):
+            if k == sub:
+                sub_label = lbl
+                break
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
         info = manifest[fname]
         if info.get('status') != 'online' or info.get('section') != section_key:
             continue
+        if sub and info.get('sub_category', '') != sub:
+            continue
         count += 1
         title = info.get('title', fname)
         preview_url = f'/articles/{fname}'
-        edit_url = f'/admin/edit?path={fname}&from=done-{section_key}'
+        edit_from = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
+        edit_url = f'/admin/edit?path={fname}&from={edit_from}'
         rows += f'''<div class="row">
 <div class="info">
 <div class="name">{html_escape(title)}</div>
@@ -376,12 +406,17 @@ def render_done_page(section_key, msg=None):
             msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
         elif msg.startswith('err:'):
             msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
-    return render_page(f'已上线 - {label}',
+    title_parts = ['已上线', label]
+    if sub_label:
+        title_parts.append(sub_label)
+    page_title = ' · '.join(title_parts)
+    current_page = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
+    return render_page(page_title,
         f'''<div class="card">
-<div class="card-title">✅ 已上线 · {label}（共 {count} 篇）</div>
+<div class="card-title">✅ 已上线 · {label}{" > " + sub_label if sub_label else ""}（共 {count} 篇）</div>
 {msg_html}
 {rows}
-</div>''', f'done-{section_key}')
+</div>''', current_page)
 
 def render_edit_page(fname, return_to='draft', msg=None):
     """编辑页，和原来一样——contenteditable + 滚动 + 底部按钮"""
@@ -435,8 +470,24 @@ secSel.addEventListener('change',function(){
 });
 </script>'''
 
-    back_url = f'/admin/done/{return_to[5:]}' if return_to.startswith('done') else '/admin/draft'
-    back_label = '返回已上线' if return_to.startswith('done') else '返回草稿管理'
+    # 解析 return_to 确定返回链接
+    if return_to.startswith('done'):
+        rest = return_to[5:]  # 去掉 "done-"
+        # 匹配已知的板块key（有些key自带连字符如 before-you-go）
+        section_from = rest
+        sub_from = ''
+        for sk in GUIDE_SECTIONS:
+            if rest == sk or rest.startswith(sk + '-'):
+                section_from = sk
+                sub_from = rest[len(sk)+1:]
+                break
+        back_url = f'/admin/done/{section_from}'
+        if sub_from:
+            back_url += f'?sub={sub_from}'
+        back_label = '返回已上线'
+    else:
+        back_url = '/admin/draft'
+        back_label = '返回草稿管理'
     path_readonly = ' readonly' if not is_new else ''
 
     return render_page(
@@ -511,8 +562,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if section not in GUIDE_SECTIONS:
                 self.send_redirect('/admin/draft')
                 return
+            sub = qs.get('sub', [None])[0] or ''
             msg = qs.get('msg', [None])[0]
-            self.send_html(render_done_page(section, msg))
+            self.send_html(render_done_page(section, sub, msg))
             return
 
         # 编辑页

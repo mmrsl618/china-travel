@@ -3,3 +3,6 @@
 __pycache__/  
 *.pyc 
 _test_*.py 
+*.bak
+admin_server_v*.py
+_backup_*/
