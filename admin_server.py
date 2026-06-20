@@ -153,16 +153,34 @@ def extract_article_content(full_html):
         content = re.sub(r'\s*' + tag + r'\s*', '', content)
     return title.strip(), desc.strip(), content.strip()
 
-def apply_master_template(content, title, desc):
+def apply_master_template(content, title, desc, section=''):
+    """套母版，section 用于导航高亮（如 'before-you-go'）"""
     tpl_path = os.path.join(SITE_DIR, 'templates', 'article-master.html')
     try:
         with open(tpl_path, 'r', encoding='utf-8') as f:
             tpl = f.read()
     except:
         return content
+
+    # 生成带高亮的导航
+    nav_map = [
+        ('before-you-go', 'Before You Go', '../guides/before-you-go.html'),
+        ('payment', 'Payment', '../guides/payment.html'),
+        ('transportation', 'Transportation', '../guides/transportation.html'),
+        ('stay', 'Where to Stay', '../guides/stay.html'),
+        ('explore', 'Explore China', '../guides/explore.html'),
+    ]
+    nav_html = ''
+    for key, label, url in nav_map:
+        if key == section:
+            nav_html += f'      <span class="crumb current">{label}</span>\n'
+        else:
+            nav_html += f'      <a href="{url}">{label}</a>\n'
+
     return (tpl
             .replace('__TITLE__', title)
             .replace('__DESCRIPTION__', desc)
+            .replace('__NAV__', nav_html)
             .replace('__CONTENT__', content))
 
 # =====================================================================
@@ -658,7 +676,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if not title:
                 title = 'China Travel Guide'
             # 套母版
-            final_html = apply_master_template(body_content, title, desc)
+            # 从路径推断所属板块（articles/en/<section>/...）
+            path_parts = ep.split('/')
+            section = path_parts[2] if len(path_parts) > 2 and path_parts[0] == 'articles' and path_parts[1] == 'en' else ''
+            final_html = apply_master_template(body_content, title, desc, section)
             # 保存到 articles/ （文件名取自源文件名，去掉新旧前缀和审核后缀）
             fname = os.path.basename(ep)
             for prefix in ['en-', 'zh-']:
