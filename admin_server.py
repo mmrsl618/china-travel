@@ -141,9 +141,20 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
         else:
             nav_html += f'      <a href="{url}">{lbl}</a>\n'
 
+    # 面包屑：Home › 板块名 › 文章标题（和文章详情页现有风格一致）
+    section_label = GUIDE_SECTIONS.get(section, section)
+    section_url = f'../guides/{section}.html'
+    breadcrumb = (f'<div class="breadcrumb" style="font-size:0.85rem;color:#666;'
+                  f'padding:0 0 1rem;margin:0 0 1rem;border-bottom:1px solid #eee;">\n'
+                  f'<a href="../index.html">Home</a>\n'
+                  f'<span class="sep"> › </span>\n'
+                  f'<a href="{section_url}">{html_escape(section_label)}</a>\n'
+                  f'<span class="sep"> › </span>\n'
+                  f'<span>{html_escape(title)}</span>\n</div>\n')
+
     tpl = tpl.replace('__TITLE__', title)
     tpl = tpl.replace('__DESCRIPTION__', desc)
-    tpl = tpl.replace('__CONTENT__', content)
+    tpl = tpl.replace('__CONTENT__', breadcrumb + content)
     tpl = tpl.replace('__NAV__', nav_html)
     return tpl
 
