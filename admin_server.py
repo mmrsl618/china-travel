@@ -163,6 +163,9 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
                   f'<span class="sep"> › </span>\n'
                   f'<span>{html_escape(last_crumb)}</span>\n</div>\n')
 
+    # 修正图片路径：.src/ 中的 ../../ 多级路径，发布到 articles/ 后统一为 ../images/
+    content = re.sub(r'(\.\./)+images/', '../images/', content)
+
     tpl = tpl.replace('__TITLE__', title)
     tpl = tpl.replace('__DESCRIPTION__', desc)
     tpl = tpl.replace('__CONTENT__', breadcrumb + content)
