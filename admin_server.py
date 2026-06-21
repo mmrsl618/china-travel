@@ -458,14 +458,16 @@ def render_edit_page(fname, return_to='draft', msg=None):
         src_content, _ = read_file(f'articles/.src/{fname}')
         if src_content:
             content = src_content
-            # 剥掉 <head> 和 <body> 标签，防止外部样式污染管理后台
+            # 剥掉 <head>/<body>/<header>/<footer>，防止外部样式/导航/版权信息污染管理后台和套壳
             m_body = re.search(r'<body[^>]*>(.*?)</body>', content, re.DOTALL)
             if m_body:
                 content = m_body.group(1).strip()
             else:
                 content = re.sub(r'<head>.*?</head>', '', content, flags=re.DOTALL)
                 content = re.sub(r'</?html[^>]*>|<!DOCTYPE[^>]*>', '', content, flags=re.DOTALL)
-        else:
+            content = re.sub(r'<header>.*?</header>', '', content, flags=re.DOTALL)
+            content = re.sub(r'<footer>.*?</footer>', '', content, flags=re.DOTALL)
+            content = content.strip()
             # 从已发布文章恢复
             pub_content, _ = read_file(f'articles/{fname}')
             if pub_content:

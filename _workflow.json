@@ -1,0 +1,22 @@
+{
+  "articles": {
+    "visa-guide": {
+      "title": "China Tourist Visa (L-Visa)",
+      "zh": { "status": "done" },
+      "review": { "status": "done", "reviewer": "san-ge" },
+      "en": { "status": "done", "file": "articles/.src/visa-guide.html" },
+      "images": { "status": "done" },
+      "image_review": { "status": "done", "reviewer": "xiao-er" },
+      "publish": { "status": "online" }
+    },
+    "144-hour-transit": {
+      "title": "China 144-Hour Transit Policy",
+      "zh": { "status": "done", "file": "reviews/144-hour-transit.md" },
+      "review": { "status": "done", "reviewer": "san-ge" },
+      "en": { "status": "done", "file": "articles/.src/144-hour-transit.html" },
+      "images": { "status": "done", "files": ["144-transit-hero.jpg", "144-transit-regions-map.jpg", "144-transit-stamp.jpg"] },
+      "image_review": { "status": "done", "reviewer": "xiao-er" },
+      "publish": { "status": "pending" }
+    }
+  }
+}
