@@ -171,6 +171,8 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
         tpl = tpl.replace('__CONTENT__', breadcrumb + content)
     else:
         tpl = tpl.replace('__CONTENT__', content)
+    tpl = tpl.replace('__TITLE__', title)
+    tpl = tpl.replace('__DESCRIPTION__', desc)
     tpl = tpl.replace('__NAV__', nav_html)
     return tpl
 
