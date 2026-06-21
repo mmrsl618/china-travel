@@ -162,63 +162,48 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
     # ---- 添加链接 ----
     tab_id = f'tab-{sub_category}'
 
-    # 策略一：找 tab-content 下已有 article-list
-    # 匹配 <div class="tab-content..." id="tab-xxx"> 到 </div>（tab-content 结尾）
-    # 然后用子匹配把 article-list 整个抓出来替换
-    full_tab_re = re.compile(
-        r'(<div\s+class="tab-content[^"]*"\s+id="' + re.escape(tab_id) + r'">)'
-        r'(.*?)'
-        r'(</div>\s*</div>)',   # article-list 的 </div> + tab-content 的 </div>
-        re.DOTALL
-    )
-    m = full_tab_re.search(content)
-    if not m:
-        # 如果 tab-content 是单独闭合的 <div...></div>
-        full_tab_re = re.compile(
-            r'(<div\s+class="tab-content[^"]*"\s+id="' + re.escape(tab_id) + r'">)'
-            r'(.*?)'
-            r'(</div>)',
-            re.DOTALL
-        )
-        m = full_tab_re.search(content)
-
-    if not m:
+    # 找 tab-content 的起始位置
+    tab_markers = [
+        f'<div class="tab-content active" id="{tab_id}">',
+        f'<div class="tab-content" id="{tab_id}">',
+    ]
+    tab_start = -1
+    for marker in tab_markers:
+        tab_start = content.find(marker)
+        if tab_start >= 0:
+            break
+    if tab_start < 0:
         return False, f'在 {guide_path} 中未找到 #{tab_id} div'
 
-    tab_open = m.group(1)
-    tab_inner = m.group(2)
-    tab_close = m.group(3)
+    # 跳过 opening tag
+    tag_end = content.index('>', tab_start) + 1
 
-    article_link = link_html
-
-    # 去重
-    if f'href="../articles/{fname}"' in tab_inner:
+    # 去重检查
+    if f'href="../articles/{fname}"' in content[tag_end:]:
         return True, None  # 已存在，跳过
 
-    # 找 tab_inner 里的 article-list
-    al_re = re.compile(r'(<div class="article-list">)(.*?)(</div>)', re.DOTALL)
-    al_m = al_re.search(tab_inner)
+    # 找 article-list
+    al_marker = '<div class="article-list">'
+    al_pos = content.find(al_marker, tag_end)
 
-    if al_m:
-        # 已有 article-list，追加
-        existing_links = al_m.group(2).strip()
-        new_article_list = (
-            al_m.group(1) + '\n    ' + existing_links + '\n    ' + article_link + '\n  ' + al_m.group(3)
-        )
+    if al_pos >= 0:
+        # 已有 article-list，在末尾追加新链接
+        al_close = content.find('</div>', al_pos)
+        if al_close < 0:
+            return False, f'在 {guide_path} 中 article-list 缺少闭合标签'
+        new_content = (content[:al_close] +
+                       '\n    ' + link_html +
+                       content[al_close:])
     else:
-        # 没有 article-list，新建
-        new_article_list = (
-            '<div class="article-list">\n    ' + article_link + '\n  </div>'
-        )
+        # 没有 article-list，在 tab-content 内新建
+        # 找 tab-content 的闭合 </div>
+        tab_close = content.find('</div>', tag_end)
+        if tab_close < 0:
+            return False, f'在 {guide_path} 中 #{tab_id} 缺少闭合标签'
+        new_content = (content[:tab_close] +
+                       '\n  <div class="article-list">\n    ' + link_html + '\n  </div>' +
+                       content[tab_close:])
 
-    # 替换 tab_inner 中对应的部分
-    if al_m:
-        new_inner = tab_inner[:al_m.start()] + new_article_list + tab_inner[al_m.end():]
-    else:
-        # tab_inner 原本是空的，直接放 article-list
-        new_inner = new_article_list
-
-    new_content = content[:m.start()] + tab_open + new_inner + tab_close + content[m.end():]
     if new_content == content:
         return False, f'修改 {guide_path} 后无变化'
 
