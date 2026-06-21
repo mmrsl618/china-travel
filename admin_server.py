@@ -166,11 +166,10 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
     # 修正图片路径：.src/ 中的 ../../ 多级路径，发布到 articles/ 后统一为 ../images/
     content = re.sub(r'(\.\./)+images/', '../images/', content)
 
-    # 如果内容已经有面包屑（从源文件带来），不再重复添加
-    if 'class="breadcrumb"' not in content:
-        tpl = tpl.replace('__CONTENT__', breadcrumb + content)
-    else:
-        tpl = tpl.replace('__CONTENT__', content)
+    # 替换/剥离现有面包屑（可能是旧的），统一用新的
+    content = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', content, flags=re.DOTALL)
+
+    tpl = tpl.replace('__CONTENT__', breadcrumb + content)
     tpl = tpl.replace('__TITLE__', title)
     tpl = tpl.replace('__DESCRIPTION__', desc)
     tpl = tpl.replace('__NAV__', nav_html)
