@@ -137,59 +137,90 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
     if not content:
         return False, f'找不到 {guide_path}: {err}'
 
-    article_link = f'<a href="../articles/{fname}" class="article-link">{html_escape(title)}</a>'
-    tab_id = f'tab-{sub_category}'
+    link_html = f'<a href="../articles/{fname}" class="article-link">{html_escape(title)}</a>'
 
     if remove:
-        # 删除链接
-        # 匹配 link 及其前后的换行/空格
-        pattern = re.compile(
-            r'\s*' + re.escape(article_link) + r'\s*',
-            re.DOTALL
-        )
-        new_content, n = pattern.subn('\n', content)
-        if n == 0:
-            return False, f'在 {guide_path} 中未找到「{title}」的链接'
-        # 如果删除后 article-list 空了，清理多余的空白
+        # 删除链接（连带前后空白和换行）
         new_content = re.sub(
-            r'<div class="article-list">\s*</div>',
+            r'\s*' + re.escape(link_html) + r'\s*\n?',
+            '\n',
+            content
+        )
+        if new_content == content:
+            return False, f'在 {guide_path} 中未找到「{title}」的链接'
+        # 清理空 article-list
+        new_content = re.sub(
+            r'<div class="article-list">\s*</div>\n?',
             '',
             new_content
         )
-    else:
-        # 添加链接
-        # 定位 tab-content div
-        tab_re = re.compile(
-            r'(<div\s+class="tab-content[^"]*"\s+id="' + re.escape(tab_id) + r'">)(.*?)(</div>)',
+        ok, err = write_file(guide_path, new_content)
+        if not ok:
+            return False, f'写入 {guide_path} 失败: {err}'
+        return True, None
+
+    # ---- 添加链接 ----
+    tab_id = f'tab-{sub_category}'
+
+    # 策略一：找 tab-content 下已有 article-list
+    # 匹配 <div class="tab-content..." id="tab-xxx"> 到 </div>（tab-content 结尾）
+    # 然后用子匹配把 article-list 整个抓出来替换
+    full_tab_re = re.compile(
+        r'(<div\s+class="tab-content[^"]*"\s+id="' + re.escape(tab_id) + r'">)'
+        r'(.*?)'
+        r'(</div>\s*</div>)',   # article-list 的 </div> + tab-content 的 </div>
+        re.DOTALL
+    )
+    m = full_tab_re.search(content)
+    if not m:
+        # 如果 tab-content 是单独闭合的 <div...></div>
+        full_tab_re = re.compile(
+            r'(<div\s+class="tab-content[^"]*"\s+id="' + re.escape(tab_id) + r'">)'
+            r'(.*?)'
+            r'(</div>)',
             re.DOTALL
         )
-        m = tab_re.search(content)
-        if not m:
-            return False, f'在 {guide_path} 中未找到 #{tab_id} div'
+        m = full_tab_re.search(content)
 
-        tab_open = m.group(1)
-        tab_inner = m.group(2).strip()
-        tab_close = m.group(3)
+    if not m:
+        return False, f'在 {guide_path} 中未找到 #{tab_id} div'
 
-        # 检查是否已有 article-list
-        al_re = re.compile(r'<div class="article-list">(.*?)</div>', re.DOTALL)
-        al_m = al_re.search(tab_inner)
+    tab_open = m.group(1)
+    tab_inner = m.group(2)
+    tab_close = m.group(3)
 
-        if al_m:
-            existing_links = al_m.group(1).strip()
-            # 去重检查
-            if f'href="../articles/{fname}"' in existing_links:
-                return True, None  # 已存在，跳过
-            new_inner = tab_open + '\n  <div class="article-list">\n    ' + \
-                        existing_links + '\n    ' + article_link + \
-                        '\n  </div>\n' + tab_close
-        else:
-            new_inner = tab_open + '\n  <div class="article-list">\n    ' + \
-                        article_link + '\n  </div>\n' + tab_close
+    article_link = link_html
 
-        new_content = content[:m.start()] + new_inner + content[m.end():]
-        if new_content == content:
-            return False, f'修改 {guide_path} 后无变化'
+    # 去重
+    if f'href="../articles/{fname}"' in tab_inner:
+        return True, None  # 已存在，跳过
+
+    # 找 tab_inner 里的 article-list
+    al_re = re.compile(r'(<div class="article-list">)(.*?)(</div>)', re.DOTALL)
+    al_m = al_re.search(tab_inner)
+
+    if al_m:
+        # 已有 article-list，追加
+        existing_links = al_m.group(2).strip()
+        new_article_list = (
+            al_m.group(1) + '\n    ' + existing_links + '\n    ' + article_link + '\n  ' + al_m.group(3)
+        )
+    else:
+        # 没有 article-list，新建
+        new_article_list = (
+            '<div class="article-list">\n    ' + article_link + '\n  </div>'
+        )
+
+    # 替换 tab_inner 中对应的部分
+    if al_m:
+        new_inner = tab_inner[:al_m.start()] + new_article_list + tab_inner[al_m.end():]
+    else:
+        # tab_inner 原本是空的，直接放 article-list
+        new_inner = new_article_list
+
+    new_content = content[:m.start()] + tab_open + new_inner + tab_close + content[m.end():]
+    if new_content == content:
+        return False, f'修改 {guide_path} 后无变化'
 
     ok, err = write_file(guide_path, new_content)
     if not ok:

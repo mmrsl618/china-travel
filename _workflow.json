@@ -21,8 +21,8 @@
     "mobile-payment": {
       "title": "Mobile Payment in China",
       "zh": { "status": "done", "file": "reviews/mobile-payment.md" },
-      "review": { "status": "pending" },
-      "en": { "status": "pending" },
+      "review": { "status": "done", "reviewer": "san-ge" },
+      "en": { "status": "done", "file": "articles/.src/mobile-payment.html" },
       "images": { "status": "pending" },
       "image_review": { "status": "pending" },
       "publish": { "status": "pending" }
