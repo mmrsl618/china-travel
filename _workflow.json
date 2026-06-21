@@ -20,11 +20,11 @@
     },
     "mobile-payment": {
       "title": "Mobile Payment in China",
-      "zh": { "status": "done", "file": "reviews/mobile-payment.md" },
+      "zh": { "status": "done", "file": "articles/.src/mobile-payment.html" },
       "review": { "status": "done", "reviewer": "san-ge" },
       "en": { "status": "done", "file": "articles/.src/mobile-payment.html" },
-      "images": { "status": "done", "files": ["mobile-payment-01-street-food-market.jpg", "mobile-payment-02-alipay-home-screen.jpg", "mobile-payment-03-alipay-identity-verification.jpg", "mobile-payment-04-scanning-qr-restaurant.jpg", "mobile-payment-05-wechat-pay-interface.jpg", "mobile-payment-06-wechat-miniprogram-order.jpg", "mobile-payment-07-tourcard-page.jpg", "mobile-payment-08-bank-of-china-atm.jpg"] },
-      "image_review": { "status": "reviewing", "reviewer": "xiao-er" },
+      "images": { "status": "done", "files": ["mobile-payment-01-street-food-market.jpg", "mobile-payment-03-alipay-identity-verification.jpg", "mobile-payment-05-wechat-pay-interface.jpg", "mobile-payment-08-bank-of-china-atm.jpg"] },
+      "image_review": { "status": "done", "reviewer": "xiao-er", "notes": "已删4张冗余图，保留4张核心界面" },
       "publish": { "status": "pending" }
     }
   }
