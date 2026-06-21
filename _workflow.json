@@ -23,8 +23,8 @@
       "zh": { "status": "done", "file": "articles/.src/mobile-payment.html" },
       "review": { "status": "done", "reviewer": "san-ge" },
       "en": { "status": "done", "file": "articles/.src/mobile-payment.html" },
-      "images": { "status": "done", "files": ["mobile-payment-01-street-food-market.jpg", "mobile-payment-03-alipay-identity-verification.jpg", "mobile-payment-05-wechat-pay-interface.jpg", "mobile-payment-08-bank-of-china-atm.jpg"] },
-      "image_review": { "status": "done", "reviewer": "xiao-er", "notes": "已删4张冗余图，保留4张核心界面" },
+      "images": { "status": "done", "files": ["mobile-payment-01-street-food-market.png", "mobile-payment-03-alipay-identity-verification.jpg", "mobile-payment-05-wechat-pay-interface.jpg", "mobile-payment-08-bank-of-china-atm.jpg"] },
+      "image_review": { "status": "in_progress", "reviewer": "shijuezhijian", "notes": "2026-06-21 重做 mobile-payment-01: JPG→PNG(无损), 去暗边, 重绘支付宝付款界面 ✅ 小二已验图通过 | 2026-06-22 重做后新图逐一质检中" },
       "publish": { "status": "pending" }
     }
   }
