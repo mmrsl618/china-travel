@@ -471,6 +471,8 @@ def render_edit_page(fname, return_to='draft', msg=None):
                 content = re.sub(r'</?html[^>]*>|<!DOCTYPE[^>]*>', '', content, flags=re.DOTALL)
             content = re.sub(r'<header>.*?</header>', '', content, flags=re.DOTALL)
             content = re.sub(r'<footer>.*?</footer>', '', content, flags=re.DOTALL)
+            # 剥掉可能从之前发布带回来的面包屑
+            content = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', content, flags=re.DOTALL)
             content = content.strip()
             # 从已发布文章恢复
             pub_content, _ = read_file(f'articles/{fname}')
