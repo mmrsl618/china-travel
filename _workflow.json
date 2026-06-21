@@ -17,6 +17,15 @@
       "images": { "status": "done", "files": ["144-transit-hero.jpg", "144-transit-regions-map.jpg", "144-transit-stamp.jpg"] },
       "image_review": { "status": "done", "reviewer": "xiao-er" },
       "publish": { "status": "pending" }
+    },
+    "mobile-payment": {
+      "title": "Mobile Payment in China",
+      "zh": { "status": "done", "file": "reviews/mobile-payment.md" },
+      "review": { "status": "pending" },
+      "en": { "status": "pending" },
+      "images": { "status": "pending" },
+      "image_review": { "status": "pending" },
+      "publish": { "status": "pending" }
     }
   }
 }
