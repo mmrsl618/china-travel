@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v3
+"""admin_server.py — 管理后台 v3.1
+ - 不写死代理，由系统 git 自行读取用户配置（git config / 环境变量 / TUN）
+ - git add/commit 返回码检查，"nothing to commit" 不报错
+ - push 失败时区分网络问题和代码问题，分别提示
 
 端口 8082 | ThreadingTCPServer
 
@@ -284,29 +287,38 @@ def strip_title(content):
 #  Git 同步
 # =====================================================================
 def git_push():
-    """git add + commit + push，网络被墙时友好提示"""
+    """git add + commit + push，不写死代理，由系统 git 自行读取用户配置"""
     if not os.path.isdir(os.path.join(SITE_DIR, '.git')):
         return False, '不是 git 仓库'
     try:
-        subprocess.run([GIT_EXE, 'add', '-A'], cwd=SITE_DIR, capture_output=True, timeout=10)
-        subprocess.run([GIT_EXE, 'commit', '-m', 'admin: publish'], cwd=SITE_DIR, capture_output=True, timeout=10)
-        r = subprocess.run([GIT_EXE, 'push'], cwd=SITE_DIR, capture_output=True, timeout=60)
-        if r.returncode != 0:
-            err_text = r.stderr.decode('utf-8', errors='replace')
-            # 检测网络被墙类错误
+        # add
+        r_add = subprocess.run([GIT_EXE, 'add', '-A'], cwd=SITE_DIR, capture_output=True, timeout=10)
+        if r_add.returncode != 0:
+            return False, f'git add 失败: {r_add.stderr.decode("utf-8", errors="replace")[:200]}'
+
+        # commit（nothing to commit 不算失败）
+        r_commit = subprocess.run([GIT_EXE, 'commit', '-m', 'admin: publish'], cwd=SITE_DIR, capture_output=True, timeout=10)
+        if r_commit.returncode != 0:
+            commit_msg = r_commit.stderr.decode('utf-8', errors='replace')
+            if 'nothing to commit' not in commit_msg and 'nothing added to commit' not in commit_msg:
+                return False, f'git commit 失败: {commit_msg[:200]}'
+
+        # push
+        r_push = subprocess.run([GIT_EXE, 'push'], cwd=SITE_DIR, capture_output=True, timeout=60)
+        if r_push.returncode != 0:
+            err_text = r_push.stderr.decode('utf-8', errors='replace') + r_push.stdout.decode('utf-8', errors='replace')
             network_keywords = [
                 'Could not resolve host', 'Failed to connect',
                 'Connection refused', 'Connection timed out',
                 'timeout', 'timed out', 'Name or service not known',
-                'cannot open shared object file', 'Network is unreachable',
-                'Could not read from remote repository',
+                'Network is unreachable',
             ]
             if any(kw in err_text for kw in network_keywords):
-                return False, 'GitHub 连接失败，请检查网络代理后重试'
+                return False, 'GitHub 连接失败，请检查网络后重试\n（如已配代理请确认代理软件已开启）'
             return False, err_text[:300]
         return True, None
     except subprocess.TimeoutExpired:
-        return False, 'Git push 超时，请检查网络代理后重试'
+        return False, 'Git push 超时，请检查网络后重试\n（如已配代理请确认代理软件已开启）'
     except Exception as e:
         return False, str(e)[:200]
 
@@ -887,7 +899,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 #  启动
 # =====================================================================
 if __name__ == '__main__':
-    print(f'管理后台 v3 — http://localhost:{PORT}/admin')
+    print(f'管理后台 v3.1 — http://localhost:{PORT}/admin')
     os.makedirs(SRC_DIR, exist_ok=True)
     with socketserver.ThreadingTCPServer(('', PORT), AdminHandler) as httpd:
         try:
