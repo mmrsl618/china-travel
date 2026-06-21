@@ -10,11 +10,5 @@
     "section": "before-you-go",
     "status": "online",
     "sub_category": "visa"
-  },
-  "mobile-payment.html": {
-    "title": "中国移动支付",
-    "section": "payment",
-    "status": "online",
-    "sub_category": "methods"
   }
 }

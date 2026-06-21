@@ -118,6 +118,85 @@ def remove_article_manifest(fname):
     save_manifest(m)
 
 # =====================================================================
+#  Guide 列表页自动更新
+# =====================================================================
+def update_guide_listing(section, sub_category, fname, title, remove=False):
+    """在 guides/{section}.html 对应子分类 tab 下添加/删除文章链接
+
+    Args:
+        section: 板块 key（before-you-go 等）
+        sub_category: 子分类 key（visa 等）
+        fname: 文件名（xxx.html）
+        title: 文章标题
+        remove: True=删除链接, False=添加链接
+    Returns:
+        (ok, err_msg)
+    """
+    guide_path = f'guides/{section}.html'
+    content, err = read_file(guide_path)
+    if not content:
+        return False, f'找不到 {guide_path}: {err}'
+
+    article_link = f'<a href="../articles/{fname}" class="article-link">{html_escape(title)}</a>'
+    tab_id = f'tab-{sub_category}'
+
+    if remove:
+        # 删除链接
+        # 匹配 link 及其前后的换行/空格
+        pattern = re.compile(
+            r'\s*' + re.escape(article_link) + r'\s*',
+            re.DOTALL
+        )
+        new_content, n = pattern.subn('\n', content)
+        if n == 0:
+            return False, f'在 {guide_path} 中未找到「{title}」的链接'
+        # 如果删除后 article-list 空了，清理多余的空白
+        new_content = re.sub(
+            r'<div class="article-list">\s*</div>',
+            '',
+            new_content
+        )
+    else:
+        # 添加链接
+        # 定位 tab-content div
+        tab_re = re.compile(
+            r'(<div\s+class="tab-content[^"]*"\s+id="' + re.escape(tab_id) + r'">)(.*?)(</div>)',
+            re.DOTALL
+        )
+        m = tab_re.search(content)
+        if not m:
+            return False, f'在 {guide_path} 中未找到 #{tab_id} div'
+
+        tab_open = m.group(1)
+        tab_inner = m.group(2).strip()
+        tab_close = m.group(3)
+
+        # 检查是否已有 article-list
+        al_re = re.compile(r'<div class="article-list">(.*?)</div>', re.DOTALL)
+        al_m = al_re.search(tab_inner)
+
+        if al_m:
+            existing_links = al_m.group(1).strip()
+            # 去重检查
+            if f'href="../articles/{fname}"' in existing_links:
+                return True, None  # 已存在，跳过
+            new_inner = tab_open + '\n  <div class="article-list">\n    ' + \
+                        existing_links + '\n    ' + article_link + \
+                        '\n  </div>\n' + tab_close
+        else:
+            new_inner = tab_open + '\n  <div class="article-list">\n    ' + \
+                        article_link + '\n  </div>\n' + tab_close
+
+        new_content = content[:m.start()] + new_inner + content[m.end():]
+        if new_content == content:
+            return False, f'修改 {guide_path} 后无变化'
+
+    ok, err = write_file(guide_path, new_content)
+    if not ok:
+        return False, f'写入 {guide_path} 失败: {err}'
+    return True, None
+
+# =====================================================================
 #  模板套壳
 # =====================================================================
 def apply_master_template(content, title, desc, section='', sub_category=''):
@@ -693,6 +772,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             git_ok, git_err = git_push()
 
             set_article_manifest(fname, title, section, 'online', sub_category)
+
+            # 自动更新 guide 列表页
+            if sub_category:
+                update_guide_listing(section, sub_category, fname, title)
+
             if git_ok:
                 self.redirect_msg('/admin/draft', 'ok', f'「{title}」已完成，已上线到网站')
             else:
@@ -730,6 +814,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             write_file(f'articles/{fname}', final_html)
             git_ok, git_err = git_push()
             set_article_manifest(fname, title, section, 'online', sub_category)
+
+            # 自动更新 guide 列表页（确保链接存在）
+            if sub_category:
+                update_guide_listing(section, sub_category, fname, title)
+
             if git_ok:
                 self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已重新发布到线上')
             else:
@@ -746,6 +835,12 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             info = manifest.get(fname, {})
             title = info.get('title', fname)
             section = info.get('section', 'before-you-go')
+            sub_category = info.get('sub_category', '')
+            title = info.get('title', fname)
+
+            # 先从 guide 列表页移除链接
+            if sub_category:
+                update_guide_listing(section, sub_category, fname, title, remove=True)
 
             delete_file(f'articles/.src/{fname}')
             delete_file(f'articles/{fname}')
