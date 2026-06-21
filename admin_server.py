@@ -458,6 +458,13 @@ def render_edit_page(fname, return_to='draft', msg=None):
         src_content, _ = read_file(f'articles/.src/{fname}')
         if src_content:
             content = src_content
+            # 剥掉 <head> 和 <body> 标签，防止外部样式污染管理后台
+            m_body = re.search(r'<body[^>]*>(.*?)</body>', content, re.DOTALL)
+            if m_body:
+                content = m_body.group(1).strip()
+            else:
+                content = re.sub(r'<head>.*?</head>', '', content, flags=re.DOTALL)
+                content = re.sub(r'</?html[^>]*>|<!DOCTYPE[^>]*>', '', content, flags=re.DOTALL)
         else:
             # 从已发布文章恢复
             pub_content, _ = read_file(f'articles/{fname}')
@@ -527,8 +534,8 @@ secSel.addEventListener('change',function(){
 <label>所属板块：<select name="section" id="sel-section">{section_opts}</select></label>
 <label>子分类：<select name="sub_category" id="sel-subcat">{subcat_opts or '<option value="">（无）</option>'}</select></label>
 <label>文件名：<input type="text" name="filename" value="{fname}"{path_readonly}></label>
-<div style="font-size:0.76rem;color:#999;">💡 在编辑器中用 &lt;h1&gt; 写标题，发布时标题自动提取到列表，正文不重复显示。</div>
 </div>
+<div style="font-size:0.76rem;color:#999;">💡 在编辑器中用 &lt;h1&gt; 写标题，发布时标题自动提取到列表，正文不重复显示。</div>
 {msg_html}
 <div class="editor-area"><div class="editor-inner" id="editable" contenteditable="true" style="padding:1rem;">{content}</div></div>
 <div class="edit-actions">
