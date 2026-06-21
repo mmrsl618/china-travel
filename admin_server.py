@@ -284,19 +284,31 @@ def strip_title(content):
 #  Git 同步
 # =====================================================================
 def git_push():
+    """git add + commit + push，网络被墙时友好提示"""
     if not os.path.isdir(os.path.join(SITE_DIR, '.git')):
         return False, '不是 git 仓库'
     try:
         subprocess.run([GIT_EXE, 'add', '-A'], cwd=SITE_DIR, capture_output=True, timeout=10)
         subprocess.run([GIT_EXE, 'commit', '-m', 'admin: publish'], cwd=SITE_DIR, capture_output=True, timeout=10)
-        r = subprocess.run([GIT_EXE, 'push'], cwd=SITE_DIR, capture_output=True, timeout=30)
+        r = subprocess.run([GIT_EXE, 'push'], cwd=SITE_DIR, capture_output=True, timeout=60)
         if r.returncode != 0:
-            return False, r.stderr.decode('utf-8', errors='replace')[:200]
+            err_text = r.stderr.decode('utf-8', errors='replace')
+            # 检测网络被墙类错误
+            network_keywords = [
+                'Could not resolve host', 'Failed to connect',
+                'Connection refused', 'Connection timed out',
+                'timeout', 'timed out', 'Name or service not known',
+                'cannot open shared object file', 'Network is unreachable',
+                'Could not read from remote repository',
+            ]
+            if any(kw in err_text for kw in network_keywords):
+                return False, 'GitHub 连接失败，请检查网络代理后重试'
+            return False, err_text[:300]
         return True, None
     except subprocess.TimeoutExpired:
-        return False, '超时'
+        return False, 'Git push 超时，请检查网络代理后重试'
     except Exception as e:
-        return False, str(e)
+        return False, str(e)[:200]
 
 # =====================================================================
 #  渲染
