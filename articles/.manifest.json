@@ -2,13 +2,7 @@
   "visa-guide.html": {
     "title": "China Tourist Visa (L-Visa)",
     "section": "before-you-go",
-    "status": "online",
-    "sub_category": "visa"
-  },
-  "144-hour-transit.html": {
-    "title": "China 144-Hour Transit Policy",
-    "section": "before-you-go",
-    "status": "online",
+    "status": "zh_draft",
     "sub_category": "visa"
   },
   "mobile-payment.html": {
