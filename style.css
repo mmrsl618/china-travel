@@ -526,7 +526,7 @@ body.article-page {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  margin: 1.5rem auto;
+  margin: 1.5rem 0;
   display: block;
 }
 .article table {
