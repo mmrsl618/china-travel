@@ -24,9 +24,21 @@ SITE_DIR = r'E:\项目库\china-travel-website'
 PORT = 8082
 GIT_EXE = r'C:\Program Files\Git\bin\git.exe'
 
-SRC_DIR = os.path.join(SITE_DIR, 'articles', '.src')
 ARTICLES_DIR = os.path.join(SITE_DIR, 'articles')
 MANIFEST_PATH = os.path.join(SITE_DIR, 'articles', '.manifest.json')
+
+# 新文件夹结构辅助函数
+def article_dir(fname):
+    """fname = manifest key (文件夹名)"""
+    return os.path.join(ARTICLES_DIR, fname)
+
+def source_path(fname):
+    """中文稿路径"""
+    return os.path.join(ARTICLES_DIR, fname, 'zh.html')
+
+def published_path(fname):
+    """已发布英文稿路径"""
+    return os.path.join(ARTICLES_DIR, fname, 'en.html')
 
 GUIDE_MAP = [
     ('before-you-go', 'Before You Go'),
@@ -140,7 +152,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
     if not content:
         return False, f'找不到 {guide_path}: {err}'
 
-    link_html = f'<a href="../articles/{fname}" class="article-link">{html_escape(title)}</a>'
+    link_html = f'<a href="../articles/{fname}/en.html" class="article-link">{html_escape(title)}</a>'
 
     if remove:
         # 删除链接（连带前后空白和换行）
@@ -182,7 +194,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
     tag_end = content.index('>', tab_start) + 1
 
     # 去重检查
-    if f'href="../articles/{fname}"' in content[tag_end:]:
+    if f'href="../articles/{fname}/en.html"' in content[tag_end:]:
         return True, None  # 已存在，跳过
 
     # 找 article-list
@@ -261,7 +273,7 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
                   f'<span class="sep"> › </span>\n'
                   f'<span>{html_escape(last_crumb)}</span>\n</div>\n')
 
-    # 修正图片路径：.src/ 中的 ../../ 多级路径，发布到 articles/ 后统一为 ../images/
+    # 修正图片路径：统一为 images/ 相对路径
     content = re.sub(r'(\.\./)+images/', '../images/', content)
 
     # 替换/剥离现有面包屑（可能是旧的），统一用新的
@@ -473,15 +485,16 @@ def render_draft_page(msg=None):
             continue  # 已审核通过的不显示在草稿区（等待发布上线）
         count += 1
         title = info.get('title', fname)
-        # 优先从 .src/ 提取真实标题，防止 manifest.json 标题过时
-        src_content, _ = read_file(f'articles/.src/{fname}')
+        # 优先从 zh.html 提取真实标题，防止 manifest.json 标题过时
+        sp = source_path(fname)
+        src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
         if src_content:
             src_title = extract_title(src_content)
             if src_title:
                 title = src_title
         section = info.get('section', '')
         section_label = GUIDE_SECTIONS.get(section, section)
-        preview_url = f'/articles/{fname}' if os.path.isfile(os.path.join(ARTICLES_DIR, fname)) else ''
+        preview_url = f'/articles/{fname}/en.html' if os.path.isfile(published_path(fname)) else ''
         edit_url = f'/admin/edit?path={fname}&from=draft'
         preview_btn = f'<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>' if preview_url else ''
         rows += f'''<div class="row">
@@ -533,7 +546,7 @@ def render_done_page(section_key, sub='', msg=None):
             continue
         count += 1
         title = info.get('title', fname)
-        preview_url = f'/articles/{fname}'
+        preview_url = f'/articles/{fname}/en.html'
         edit_from = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
         edit_url = f'/admin/edit?path={fname}&from={edit_from}'
         rows += f'''<div class="row">
@@ -585,8 +598,9 @@ def render_edit_page(fname, return_to='draft', msg=None):
     sub_category = info.get('sub_category', '')
 
     if not is_new:
-        # 优先读 .src/ 源文件
-        src_content, _ = read_file(f'articles/.src/{fname}')
+        # 优先读 zh.html 源文件
+        sp = source_path(fname)
+        src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
         if src_content:
             content = src_content
             # 剥掉 <head>/<body>/<header>/<footer>，防止外部样式/导航/版权信息污染管理后台和套壳
@@ -602,7 +616,8 @@ def render_edit_page(fname, return_to='draft', msg=None):
             content = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', content, flags=re.DOTALL)
             content = content.strip()
             # 从已发布文章恢复
-            pub_content, _ = read_file(f'articles/{fname}')
+            pp = published_path(fname)
+            pub_content, _ = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
             if pub_content:
                 m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
                 body = m.group(1).strip() if m else pub_content
@@ -771,11 +786,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if not fname:
                 self.redirect_msg('/admin/draft', 'err', '文件名不能为空')
                 return
-            if not fname.endswith('.html'):
-                fname += '.html'
-
+            # fname 现在是文件夹名（如 mobile-payment-in-china），不需要 .html 后缀
             title = extract_title(content)
-            ok, err = write_file(f'articles/.src/{fname}', content)
+            ok, err = write_file(os.path.relpath(source_path(fname), SITE_DIR).replace('\\', '/'), content)
             if not ok:
                 self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'err', f'保存失败:{err}')
                 return
@@ -823,7 +836,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             title = info.get('title', '')
 
             # 读源文件
-            src_content, err = read_file(f'articles/.src/{fname}')
+            sp = source_path(fname)
+            src_content, err = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
             if not src_content:
                 self.redirect_msg('/admin/draft', 'err', f'找不到源文件:{err}')
                 return
@@ -837,7 +851,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 套模板（含面包屑）
             sub_category = info.get('sub_category', '')
             final_html = apply_master_template(body_content, title, '', section, sub_category)
-            ok, err = write_file(f'articles/{fname}', final_html)
+            pp = published_path(fname)
+            ok, err = write_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'), final_html)
             if not ok:
                 self.redirect_msg('/admin/draft', 'err', f'套壳失败:{err}')
                 return
@@ -869,9 +884,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             title = info.get('title', '')
             sub_category = info.get('sub_category', '')
 
-            src_content, err = read_file(f'articles/.src/{fname}')
+            sp = source_path(fname)
+            src_content, err = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
             if not src_content:
-                pub_content, err = read_file(f'articles/{fname}')
+                pp = published_path(fname)
+                pub_content, err = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
                 if not pub_content:
                     self.redirect_msg(f'/admin/done/{section}', 'err', f'找不到文件:{err}')
                     return
@@ -885,7 +902,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 body_content = strip_title(src_content)
 
             final_html = apply_master_template(body_content, title, '', section, sub_category)
-            write_file(f'articles/{fname}', final_html)
+            pp = published_path(fname)
+            write_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'), final_html)
             git_ok, git_err = git_push()
             set_article_manifest(fname, title, section, 'online', sub_category)
 
@@ -916,8 +934,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if sub_category:
                 update_guide_listing(section, sub_category, fname, title, remove=True)
 
-            delete_file(f'articles/.src/{fname}')
-            delete_file(f'articles/{fname}')
+            # 删除整个文章文件夹
+            import shutil
+            ad = article_dir(fname)
+            if os.path.exists(ad):
+                shutil.rmtree(ad)
             remove_article_manifest(fname)
             git_ok, git_err = git_push()
 
@@ -933,8 +954,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 #  启动
 # =====================================================================
 if __name__ == '__main__':
-    print(f'管理后台 v3.1 — http://localhost:{PORT}/admin')
-    os.makedirs(SRC_DIR, exist_ok=True)
+    print(f'管理后台 v4.0 — http://localhost:{PORT}/admin')
     with socketserver.ThreadingTCPServer(('', PORT), AdminHandler) as httpd:
         try:
             httpd.serve_forever()

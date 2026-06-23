@@ -1,14 +1,14 @@
 {
-  "visa-guide.html": {
-    "title": "中国旅游签证（L-Visa）",
+  "china-tourist-visa-l-visa": {
+    "title": "China Tourist Visa (L-Visa)",
     "section": "before-you-go",
-    "status": "zh_approved",
+    "status": "zh_draft",
     "sub_category": "visa"
   },
-  "mobile-payment.html": {
+  "mobile-payment-in-china": {
     "title": "Mobile Payment in China",
     "section": "payment",
-    "status": "online",
+    "status": "en_online",
     "sub_category": "methods"
   }
 }
