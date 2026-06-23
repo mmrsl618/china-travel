@@ -472,20 +472,20 @@ def render_page(title, body_html, current_page='draft', wide=False):
 #  页面渲染函数
 # =====================================================================
 def render_draft_page(msg=None):
-    """草稿管理：列出所有未发布的稿件（只显示待审核的草稿）"""
+    """草稿管理：列出所有未发布的稿件（待审核草稿 + 已审核待发布）"""
     manifest = get_manifest()
-    rows = ''
-    count = 0
+    draft_rows = ''
+    draft_count = 0
+    approved_rows = ''
+    approved_count = 0
+
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
         info = manifest[fname]
         status = info.get('status', 'draft')
         if status == 'online':
             continue  # 已上线的不显示在草稿区
-        if status in ('zh_approved', 'en_approved'):
-            continue  # 已审核通过的不显示在草稿区（等待发布上线）
-        count += 1
         title = info.get('title', fname)
-        # 优先从 zh.html 提取真实标题，防止 manifest.json 标题过时
+        # 优先从 zh.html 提取真实标题
         sp = source_path(fname)
         src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
         if src_content:
@@ -494,10 +494,14 @@ def render_draft_page(msg=None):
                 title = src_title
         section = info.get('section', '')
         section_label = GUIDE_SECTIONS.get(section, section)
-        preview_url = f'/articles/{fname}/en.html' if os.path.isfile(published_path(fname)) else ''
         edit_url = f'/admin/edit?path={fname}&from=draft'
-        preview_btn = f'<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>' if preview_url else ''
-        rows += f'''<div class="row">
+
+        if status in ('zh_approved', 'en_approved'):
+            # 已审核通过：编辑 + 预览 + 套壳发布
+            preview_url = f'/articles/{fname}/en.html' if os.path.isfile(published_path(fname)) else ''
+            preview_btn = f'<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>' if preview_url else ''
+            approved_count += 1
+            approved_rows += f'''<div class="row">
 <div class="info">
 <div class="name">{html_escape(title)}</div>
 <div class="path">{fname} · {section_label} · {status}</div>
@@ -505,24 +509,48 @@ def render_draft_page(msg=None):
 <div class="actions">
 <a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
 {preview_btn}
+<form method="POST" action="/admin/complete" style="display:inline"
+      onsubmit="return confirm('确认完成发布？将生成 en.html 上线版本。')">
+<input type="hidden" name="path" value="{fname}">
+<button type="submit" class="btn btn-done" style="background:#DE2910;">🚀 套壳发布</button></form>
+</div></div>'''
+        else:
+            # 待审核草稿：编辑 + 通过
+            draft_count += 1
+            draft_rows += f'''<div class="row">
+<div class="info">
+<div class="name">{html_escape(title)}</div>
+<div class="path">{fname} · {section_label} · {status}</div>
+</div>
+<div class="actions">
+<a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
 <form method="POST" action="/admin/approve" style="display:inline"
-      onsubmit="return confirm('确认审核通过？文章将从草稿箱移除。')">
+      onsubmit="return confirm('确认审核通过？文章将进入「已审核待发布」区。')">
 <input type="hidden" name="path" value="{fname}">
 <button type="submit" class="btn btn-done">✅ 通过</button></form>
 </div></div>'''
-    if count == 0:
-        rows = '<div class="empty">暂无待审核草稿</div>'
+
+    if draft_count == 0:
+        draft_rows = '<div class="empty">暂无待审核草稿</div>'
+    if approved_count == 0:
+        approved_rows = '<div class="empty small">暂无已审核待发布的文章</div>'
+
     msg_html = ''
     if msg:
         if msg.startswith('ok:'):
             msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
         elif msg.startswith('err:'):
             msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
+
     return render_page('草稿管理',
         f'''<div class="card">
-<div class="card-title">📄 草稿管理（共 {count} 篇待审核）</div>
+<div class="card-title">📄 待审核草稿（共 {draft_count} 篇）</div>
 {msg_html}
-{rows}
+{draft_rows}
+</div>
+<div class="card" style="margin-top:1rem;">
+<div class="card-title">✅ 已审核待发布（共 {approved_count} 篇）</div>
+{approved_rows}
 </div>''', 'draft')
 
 def render_done_page(section_key, sub='', msg=None):
@@ -580,6 +608,9 @@ def render_done_page(section_key, sub='', msg=None):
         title_parts.append(sub_label)
     page_title = ' · '.join(title_parts)
     current_page = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
+    # 修正编辑页图片路径：相对路径 → 绝对路径（浏览器在 /admin/ 下解析不到）
+    content = re.sub(r'(src=")(?!http|/)(.*?images/)', lambda m: m.group(1) + '/articles/' + fname + '/' + m.group(2), content)
+
     return render_page(page_title,
         f'''<div class="card">
 <div class="card-title">✅ 已上线 · {label}{" > " + sub_label if sub_label else ""}（共 {count} 篇）</div>
@@ -671,6 +702,9 @@ secSel.addEventListener('change',function(){
         back_url = '/admin/draft'
         back_label = '返回草稿管理'
     path_readonly = ' readonly' if not is_new else ''
+
+    # 修正编辑页图片路径：相对路径 → 绝对路径（浏览器在 /admin/ 下解析不到）
+    content = re.sub(r'(src=")(?!http|/)(.*?images/)', lambda m: m.group(1) + '/articles/' + fname + '/' + m.group(2), content)
 
     return render_page(
         f'编辑文章：{fname}',
@@ -788,6 +822,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 return
             # fname 现在是文件夹名（如 mobile-payment-in-china），不需要 .html 后缀
             title = extract_title(content)
+            # 编辑器中的绝对图片路径 → 相对路径（存到源文件）
+            content = re.sub(r'/articles/' + re.escape(fname) + r'/images/', 'images/', content)
             ok, err = write_file(os.path.relpath(source_path(fname), SITE_DIR).replace('\\', '/'), content)
             if not ok:
                 self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'err', f'保存失败:{err}')

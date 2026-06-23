@@ -1,37 +1,47 @@
 {
   "articles": {
-    "visa-guide": {
+    "china-tourist-visa-l-visa": {
       "title": "China Tourist Visa (L-Visa)",
-      "zh": { "status": "done" },
+      "zh": { "status": "done", "file": "articles/china-tourist-visa-l-visa/zh.html" },
       "review": { "status": "done", "reviewer": "san-ge" },
-      "en": { "status": "done", "file": "articles/.src/visa-guide.html" },
+      "en": { "status": "done", "file": "articles/china-tourist-visa-l-visa/zh.html" },
+      "template": { "status": "pending" },
       "images": { "status": "done", "files": [
-        "visa-guide-01-l-visa-in-passport.jpg",
-        "visa-guide-02-visa-free-countries-map.jpg",
-        "visa-guide-03-cova-system-screenshot.jpg",
-        "visa-guide-04-application-documents.jpg"
+        "articles/china-tourist-visa-l-visa/images/01-l-visa-in-passport.jpg",
+        "articles/china-tourist-visa-l-visa/images/02-visa-free-countries-map.jpg",
+        "articles/china-tourist-visa-l-visa/images/03-cova-system-screenshot.jpg",
+        "articles/china-tourist-visa-l-visa/images/04-application-documents.jpg"
       ]},
       "image_review": { "status": "done", "reviewer": "shijuezhijian", "passed": true },
-      "publish": { "status": "pending" },
       "publish": { "status": "pending" }
     },
     "144-hour-transit": {
       "title": "China 144-Hour Transit Policy",
-      "zh": { "status": "done", "file": "reviews/144-hour-transit.md" },
+      "zh": { "status": "done", "file": "articles/144-hour-transit/zh.html" },
       "review": { "status": "done", "reviewer": "san-ge" },
-      "en": { "status": "done", "file": "articles/.src/144-hour-transit.html" },
-      "images": { "status": "done", "files": ["144-transit-hero.jpg", "144-transit-regions-map.jpg", "144-transit-stamp.jpg"] },
-      "image_review": { "status": "done", "reviewer": "xiao-er" },
+      "en": { "status": "done", "file": "articles/144-hour-transit/en.html" },
+      "template": { "status": "pending" },
+      "images": { "status": "done", "files": [
+        "articles/144-hour-transit/images/144-transit-hero.jpg",
+        "articles/144-hour-transit/images/144-transit-regions-map.jpg",
+        "articles/144-hour-transit/images/144-transit-stamp.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "xiao-er", "passed": true },
       "publish": { "status": "pending" }
     },
-    "mobile-payment": {
+    "mobile-payment-in-china": {
       "title": "Mobile Payment in China",
-      "zh": { "status": "done", "file": "articles/.src/mobile-payment.html" },
+      "zh": { "status": "done", "file": "articles/mobile-payment-in-china/zh.html" },
       "review": { "status": "done", "reviewer": "san-ge" },
-      "en": { "status": "done", "file": "articles/.src/mobile-payment.html" },
-      "images": { "status": "done", "files": ["mobile-payment-01-street-food-market.png", "mobile-payment-03-alipay-identity-verification.jpg", "mobile-payment-05-wechat-pay-interface.jpg", "mobile-payment-08-bank-of-china-atm.jpg"] },
-      "image_review": { "status": "in_progress", "reviewer": "shijuezhijian", "notes": "2026-06-21 重做 mobile-payment-01: JPG→PNG(无损), 去暗边, 重绘支付宝付款界面 ✅ 小二已验图通过 | 2026-06-22 重做后新图逐一质检中" },
-      "publish": { "status": "pending" }
+      "en": { "status": "done", "file": "articles/mobile-payment-in-china/en.html" },
+      "images": { "status": "done", "files": [
+        "articles/mobile-payment-in-china/images/01-street-food-market.jpg",
+        "articles/mobile-payment-in-china/images/02-alipay-identity-verification.jpg",
+        "articles/mobile-payment-in-china/images/03-wechat-pay-interface.jpg",
+        "articles/mobile-payment-in-china/images/04-bank-of-china-atm.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "shijuezhijian", "passed": true },
+      "publish": { "status": "online" }
     }
   }
 }
