@@ -433,8 +433,12 @@ def _section_nav_html(section_key, section_label, current_page):
 
 def sidebar_nav(current_page):
     """生成左侧导航"""
-    html = f'<a class="nav-item{" active" if current_page=="draft" else ""}" href="/admin/draft">📄 草稿管理</a>'
+    zh_active = ' active' if current_page == 'draft-zh' else ''
+    en_active = ' active' if current_page == 'draft-en' else ''
+    html = f'<a class="nav-item{zh_active}" href="/admin/draft/zh">📄 中文草稿</a>'
+    html += f'<a class="nav-item{en_active}" href="/admin/draft/en">📄 英文草稿</a>'
     # 已上线（汉堡式导航，5个板块）
+    is_online = current_page.startswith('done')
     is_online = current_page.startswith('done')
     html += f'''<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">
 ✅ 已上线 <span class="arrow">▸</span></div>'''
@@ -471,21 +475,40 @@ def render_page(title, body_html, current_page='draft', wide=False):
 # =====================================================================
 #  页面渲染函数
 # =====================================================================
-def render_draft_page(msg=None):
-    """草稿管理：列出所有未发布的稿件（待审核草稿 + 已审核待发布）"""
+def render_draft_page(lang, msg=None):
+    """草稿页：lang='zh' 显示中文草稿（编辑+通过），lang='en' 显示英文草稿（编辑+套壳发布）"""
     manifest = get_manifest()
-    draft_rows = ''
-    draft_count = 0
-    approved_rows = ''
-    approved_count = 0
-
+    rows = ''
+    count = 0
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
         info = manifest[fname]
         status = info.get('status', 'draft')
         if status == 'online':
-            continue  # 已上线的不显示在草稿区
+            continue
+
+        if lang == 'zh':
+            # 中文草稿只显示待三哥审的中文稿（zh_draft/draft）
+            if status not in ('draft', 'zh_draft'):
+                continue
+            action_btns = f'''
+<a class="btn btn-edit" href="/admin/edit?path={fname}&from=draft-zh">✏️ 编辑</a>
+<form method="POST" action="/admin/approve" style="display:inline"
+      onsubmit="return confirm('确认审核通过？')">
+<input type="hidden" name="path" value="{fname}">
+<button type="submit" class="btn btn-done">✅ 通过</button></form>'''
+        else:
+            # 英文草稿只显示小二处理完待三哥审的英文版（en_draft）
+            if status != 'en_draft':
+                continue
+            action_btns = f'''
+<a class="btn btn-edit" href="/admin/edit?path={fname}&from=draft-en">✏️ 编辑</a>
+<form method="POST" action="/admin/complete" style="display:inline"
+      onsubmit="return confirm('确认套壳发布？')">
+<input type="hidden" name="path" value="{fname}">
+<button type="submit" class="btn btn-done" style="background:#DE2910;">🚀 套壳发布</button></form>'''
+
+        count += 1
         title = info.get('title', fname)
-        # 优先从 zh.html 提取真实标题
         sp = source_path(fname)
         src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
         if src_content:
@@ -494,47 +517,17 @@ def render_draft_page(msg=None):
                 title = src_title
         section = info.get('section', '')
         section_label = GUIDE_SECTIONS.get(section, section)
-        edit_url = f'/admin/edit?path={fname}&from=draft'
 
-        if status in ('zh_approved', 'en_approved'):
-            # 已审核通过：编辑 + 预览 + 套壳发布
-            preview_url = f'/articles/{fname}/en.html' if os.path.isfile(published_path(fname)) else ''
-            preview_btn = f'<a class="btn btn-preview" href="{preview_url}" target="_blank">👁 预览</a>' if preview_url else ''
-            approved_count += 1
-            approved_rows += f'''<div class="row">
+        rows += f'''<div class="row">
 <div class="info">
 <div class="name">{html_escape(title)}</div>
 <div class="path">{fname} · {section_label} · {status}</div>
 </div>
-<div class="actions">
-<a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
-{preview_btn}
-<form method="POST" action="/admin/complete" style="display:inline"
-      onsubmit="return confirm('确认完成发布？将生成 en.html 上线版本。')">
-<input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-done" style="background:#DE2910;">🚀 套壳发布</button></form>
-</div></div>'''
-        else:
-            # 待审核草稿：编辑 + 通过
-            draft_count += 1
-            draft_rows += f'''<div class="row">
-<div class="info">
-<div class="name">{html_escape(title)}</div>
-<div class="path">{fname} · {section_label} · {status}</div>
-</div>
-<div class="actions">
-<a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
-<form method="POST" action="/admin/approve" style="display:inline"
-      onsubmit="return confirm('确认审核通过？文章将进入「已审核待发布」区。')">
-<input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-done">✅ 通过</button></form>
+<div class="actions">{action_btns}
 </div></div>'''
 
-    if draft_count == 0:
-        draft_rows = '<div class="empty">暂无待审核草稿</div>'
-    if approved_count == 0:
-        approved_rows = '<div class="empty small">暂无已审核待发布的文章</div>'
-
+    if count == 0:
+        rows = '<div class="empty">暂无草稿</div>'
     msg_html = ''
     if msg:
         if msg.startswith('ok:'):
@@ -542,16 +535,14 @@ def render_draft_page(msg=None):
         elif msg.startswith('err:'):
             msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
 
-    return render_page('草稿管理',
+    page_id = 'draft-zh' if lang == 'zh' else 'draft-en'
+    title = '中文草稿' if lang == 'zh' else '英文草稿'
+    return render_page(title,
         f'''<div class="card">
-<div class="card-title">📄 待审核草稿（共 {draft_count} 篇）</div>
+<div class="card-title">📄 {title}（共 {count} 篇）</div>
 {msg_html}
-{draft_rows}
-</div>
-<div class="card" style="margin-top:1rem;">
-<div class="card-title">✅ 已审核待发布（共 {approved_count} 篇）</div>
-{approved_rows}
-</div>''', 'draft')
+{rows}
+</div>''', page_id)
 
 def render_done_page(section_key, sub='', msg=None):
     """已上线：按板块列出已发布的文章，可选按子分类过滤"""
@@ -608,8 +599,6 @@ def render_done_page(section_key, sub='', msg=None):
         title_parts.append(sub_label)
     page_title = ' · '.join(title_parts)
     current_page = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
-    # 修正编辑页图片路径：相对路径 → 绝对路径（浏览器在 /admin/ 下解析不到）
-    content = re.sub(r'(src=")(?!http|/)(.*?images/)', lambda m: m.group(1) + '/articles/' + fname + '/' + m.group(2), content)
 
     return render_page(page_title,
         f'''<div class="card">
@@ -699,7 +688,7 @@ secSel.addEventListener('change',function(){
             back_url += f'?sub={sub_from}'
         back_label = '返回已上线'
     else:
-        back_url = '/admin/draft'
+        back_url = '/admin/draft/zh'
         back_label = '返回草稿管理'
     path_readonly = ' readonly' if not is_new else ''
 
@@ -760,15 +749,26 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
         qs = urllib.parse.parse_qs(parsed.query)
 
-        # 根路径重定向到草稿管理
+        # 根路径重定向到中文草稿
         if path in ('/admin', '/admin/'):
-            self.send_redirect('/admin/draft')
+            self.send_redirect('/admin/draft/zh')
             return
 
-        # 草稿管理
-        if path == '/admin/draft':
+        # 中文草稿
+        if path == '/admin/draft/zh':
             msg = qs.get('msg', [None])[0]
-            self.send_html(render_draft_page(msg))
+            self.send_html(render_draft_page('zh', msg))
+            return
+
+        # 英文草稿
+        if path == '/admin/draft/en':
+            msg = qs.get('msg', [None])[0]
+            self.send_html(render_draft_page('en', msg))
+            return
+
+        # 旧地址 /admin/draft 重定向到中文草稿
+        if path == '/admin/draft':
+            self.send_redirect('/admin/draft/zh')
             return
 
         # 已上线板块
@@ -857,7 +857,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             info['status'] = new_status
             manifest[fname] = info
             save_manifest(manifest)
-            self.redirect_msg('/admin/draft', 'ok', f'{title} 已审核通过')
+            self.redirect_msg('/admin/draft/zh', 'ok', f'{title} 已审核通过，等待小二翻译配图')
             return
 
         # ---- 完成（草稿→套壳发布上线） ----
@@ -903,9 +903,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 update_guide_listing(section, sub_category, fname, title)
 
             if git_ok:
-                self.redirect_msg('/admin/draft', 'ok', f'「{title}」已完成，已上线到网站')
+                self.redirect_msg('/admin/draft/zh', 'ok', f'「{title}」已完成，已上线到网站')
             else:
-                self.redirect_msg('/admin/draft', 'err', f'完成但同步失败:{git_err}')
+                self.redirect_msg('/admin/draft/en', 'err', f'完成但同步失败:{git_err}')
             return
 
         # ---- 重新发布（已上线文章） ----
