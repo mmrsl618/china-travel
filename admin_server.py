@@ -460,16 +460,25 @@ def render_page(title, body_html, current_page='draft', wide=False):
 #  页面渲染函数
 # =====================================================================
 def render_draft_page(msg=None):
-    """草稿管理：列出所有未发布的稿件"""
+    """草稿管理：列出所有未发布的稿件（只显示待审核的草稿）"""
     manifest = get_manifest()
     rows = ''
     count = 0
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
         info = manifest[fname]
-        if info.get('status') == 'online':
+        status = info.get('status', 'draft')
+        if status == 'online':
             continue  # 已上线的不显示在草稿区
+        if status in ('zh_approved', 'en_approved'):
+            continue  # 已审核通过的不显示在草稿区（等待发布上线）
         count += 1
         title = info.get('title', fname)
+        # 优先从 .src/ 提取真实标题，防止 manifest.json 标题过时
+        src_content, _ = read_file(f'articles/.src/{fname}')
+        if src_content:
+            src_title = extract_title(src_content)
+            if src_title:
+                title = src_title
         section = info.get('section', '')
         section_label = GUIDE_SECTIONS.get(section, section)
         preview_url = f'/articles/{fname}' if os.path.isfile(os.path.join(ARTICLES_DIR, fname)) else ''
@@ -478,18 +487,18 @@ def render_draft_page(msg=None):
         rows += f'''<div class="row">
 <div class="info">
 <div class="name">{html_escape(title)}</div>
-<div class="path">{fname} · {section_label}</div>
+<div class="path">{fname} · {section_label} · {status}</div>
 </div>
 <div class="actions">
 <a class="btn btn-edit" href="{edit_url}">✏️ 编辑</a>
 {preview_btn}
-<form method="POST" action="/admin/complete" style="display:inline"
-      onsubmit="return confirm('确认完成？将自动套壳、保存到 articles/、同步上线。')">
+<form method="POST" action="/admin/approve" style="display:inline"
+      onsubmit="return confirm('确认审核通过？文章将从草稿箱移除。')">
 <input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-done">✓ 完成（套壳发布）</button></form>
+<button type="submit" class="btn btn-done">✅ 通过</button></form>
 </div></div>'''
     if count == 0:
-        rows = '<div class="empty">暂无草稿，小二还没有推送稿件过来</div>'
+        rows = '<div class="empty">暂无待审核草稿</div>'
     msg_html = ''
     if msg:
         if msg.startswith('ok:'):
@@ -498,7 +507,7 @@ def render_draft_page(msg=None):
             msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
     return render_page('草稿管理',
         f'''<div class="card">
-<div class="card-title">📄 草稿管理（共 {count} 篇）</div>
+<div class="card-title">📄 草稿管理（共 {count} 篇待审核）</div>
 {msg_html}
 {rows}
 </div>''', 'draft')
@@ -770,11 +779,36 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if not ok:
                 self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'err', f'保存失败:{err}')
                 return
-            # 更新 manifest（保存为草稿状态，除非已是上线状态）
+            # 更新 manifest（新建草稿默认 zh_draft，已有文章保持原状态）
             manifest = get_manifest()
-            old_status = manifest.get(fname, {}).get('status', 'draft')
+            old_status = manifest.get(fname, {}).get('status', 'zh_draft')
             set_article_manifest(fname, title or fname, section, old_status, sub_category)
             self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'ok', '已保存成功')
+            return
+
+        # ---- 审核通过（草稿 → zh_approved / en_approved） ----
+        if path == '/admin/approve':
+            fname = data.get('path', [None])[0]
+            if not fname:
+                self.redirect_msg('/admin/draft', 'err', '参数错误')
+                return
+            manifest = get_manifest()
+            info = manifest.get(fname, {})
+            current_status = info.get('status', 'draft')
+            title = info.get('title', fname)
+
+            if current_status in ('draft', 'zh_draft'):
+                new_status = 'zh_approved'
+            elif current_status == 'en_draft':
+                new_status = 'en_approved'
+            else:
+                self.redirect_msg('/admin/draft', 'err', f'状态异常: {current_status}，无法审核')
+                return
+
+            info['status'] = new_status
+            manifest[fname] = info
+            save_manifest(manifest)
+            self.redirect_msg('/admin/draft', 'ok', f'{title} 已审核通过')
             return
 
         # ---- 完成（草稿→套壳发布上线） ----

@@ -560,3 +560,45 @@ body.article-page {
   font-weight: 600;
   color: #222;
 }
+
+/* ========== Article References Section ========== */
+.article .ref-separator {
+  border: none;
+  border-top: 2px solid #d0d0d0;
+  margin: 3.5rem 0 2.5rem;
+  width: 100%;
+}
+.article .article-refs {
+  font-size: 0.875rem;
+  color: #777;
+  line-height: 1.6;
+  border-left: 2px solid #e0e0e0;
+  padding-left: 1rem;
+}
+.article .article-refs .refs-note {
+  font-style: italic;
+  margin-bottom: 0.75rem;
+}
+.article .article-refs .refs-title {
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.article .article-refs .refs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+.article .article-refs .refs-list li {
+  margin-bottom: 0.3rem;
+  padding-left: 0;
+}
+.article .article-refs .refs-disclaimer {
+  font-size: 0.8rem;
+  color: #999;
+  font-style: italic;
+  margin-top: 0.5rem;
+}

@@ -5,9 +5,15 @@
       "zh": { "status": "done" },
       "review": { "status": "done", "reviewer": "san-ge" },
       "en": { "status": "done", "file": "articles/.src/visa-guide.html" },
-      "images": { "status": "done" },
-      "image_review": { "status": "done", "reviewer": "xiao-er" },
-      "publish": { "status": "online" }
+      "images": { "status": "done", "files": [
+        "visa-guide-01-l-visa-in-passport.jpg",
+        "visa-guide-02-visa-free-countries-map.jpg",
+        "visa-guide-03-cova-system-screenshot.jpg",
+        "visa-guide-04-application-documents.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "shijuezhijian", "passed": true },
+      "publish": { "status": "pending" },
+      "publish": { "status": "pending" }
     },
     "144-hour-transit": {
       "title": "China 144-Hour Transit Policy",
