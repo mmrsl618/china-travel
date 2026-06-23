@@ -70,8 +70,6 @@ SUBCAT_MAP = {
         ('cities', 'City Guides'),
         ('itineraries', 'Itineraries'),
         ('food', 'Food & Dining'),
-        ('culture', 'Culture & Etiquette'),
-        ('updates', 'Updates'),
     ],
 }
 
