@@ -897,13 +897,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # git push
             git_ok, git_err = git_push()
 
-            set_article_manifest(fname, title, section, 'online', sub_category)
-
-            # 自动更新 guide 列表页
-            if sub_category:
-                update_guide_listing(section, sub_category, fname, title)
-
             if git_ok:
+                set_article_manifest(fname, title, section, 'online', sub_category)
+                if sub_category:
+                    update_guide_listing(section, sub_category, fname, title)
                 self.redirect_msg('/admin/draft/zh', 'ok', f'「{title}」已完成，已上线到网站')
             else:
                 self.redirect_msg('/admin/draft/en', 'err', f'完成但同步失败:{git_err}')
