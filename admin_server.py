@@ -238,11 +238,11 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
     except:
         return content
     nav_map = [
-        ('before-you-go', 'Before You Go', '../guides/before-you-go.html'),
-        ('payment', 'Payment', '../guides/payment.html'),
-        ('transportation', 'Transportation', '../guides/transportation.html'),
-        ('stay', 'Where to Stay', '../guides/stay.html'),
-        ('explore', 'Explore China', '../guides/explore.html'),
+        ('before-you-go', 'Before You Go', '../../guides/before-you-go.html'),
+        ('payment', 'Payment', '../../guides/payment.html'),
+        ('transportation', 'Transportation', '../../guides/transportation.html'),
+        ('stay', 'Where to Stay', '../../guides/stay.html'),
+        ('explore', 'Explore China', '../../guides/explore.html'),
     ]
     nav_html = ''
     for k, lbl, url in nav_map:
@@ -254,7 +254,7 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
     # 面包屑：Home › 板块名 › 子分类名
     # 如果有子分类，显示子分类名；否则显示文章标题
     section_label = GUIDE_SECTIONS.get(section, section)
-    section_url = f'../guides/{section}.html'
+    section_url = f'../../guides/{section}.html'
     sub_label = ''
     if sub_category:
         for subs in SUBCAT_MAP.values():
@@ -267,14 +267,14 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
     last_crumb = sub_label if sub_label else title
     breadcrumb = (f'<div class="breadcrumb" style="font-size:0.85rem;color:#666;'
                   f'padding:0 0 1rem;margin:0 0 1rem;border-bottom:1px solid #eee;">\n'
-                  f'<a href="../index.html">Home</a>\n'
+                  f'<a href="../../index.html">Home</a>\n'
                   f'<span class="sep"> › </span>\n'
                   f'<a href="{section_url}">{html_escape(section_label)}</a>\n'
                   f'<span class="sep"> › </span>\n'
                   f'<span>{html_escape(last_crumb)}</span>\n</div>\n')
 
     # 修正图片路径：统一为 images/ 相对路径
-    content = re.sub(r'(\.\./)+images/', '../images/', content)
+    content = re.sub(r'(\.\./)+images/', '../../images/', content)
 
     # 替换/剥离现有面包屑（可能是旧的），统一用新的
     content = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', content, flags=re.DOTALL)
