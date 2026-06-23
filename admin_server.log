@@ -1,0 +1,115 @@
+ÁÆ°ÁêÜÂêéÂè∞ v4.0 ‚Äî http://localhost:8082/admin
+127.0.0.1 - - [24/Jun/2026 04:32:04] "POST /admin/pass HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 04:32:06] "POST /admin/pass HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 04:32:13] "GET /admin/publish HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:32:13] code 404, message File not found
+127.0.0.1 - - [24/Jun/2026 04:32:13] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [24/Jun/2026 04:33:22] "POST /admin/withdraw HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 04:33:22] "GET /admin/draft?msg=ok%3A%E3%80%8CTest+Draft+Article%E3%80%8D%E5%B7%B2%E6%92%A4%E5%9B%9E%E8%8D%89%E7%A8%BF%EF%BC%8C%E5%8F%AF%E9%87%8D%E6%96%B0%E7%BC%96%E8%BE%91 HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:33:27] "POST /admin/pass HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 04:33:37] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:33:40] "GET /admin/publish HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:33:44] "GET /admin/done/before-you-go HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 62484)
+Traceback (most recent call last):
+  File "D:\Qwenpaw\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "D:\Qwenpaw\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "E:\œÓƒøø‚\china-travel-website\admin_server.py", line 807, in __init__
+    super().__init__(*args, directory=SITE_DIR, **kwargs)
+  File "D:\Qwenpaw\lib\http\server.py", line 672, in __init__
+    super().__init__(*args, **kwargs)
+  File "D:\Qwenpaw\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "D:\Qwenpaw\lib\http\server.py", line 437, in handle
+    self.handle_one_request()
+  File "D:\Qwenpaw\lib\http\server.py", line 405, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "D:\Qwenpaw\lib\socket.py", line 717, in readinto
+    return self._sock.recv_into(b)
+ConnectionResetError: [WinError 10054] ‘∂≥Ã÷˜ª˙«ø∆»πÿ±’¡À“ª∏ˆœ÷”–µƒ¡¨Ω”°£
+----------------------------------------
+127.0.0.1 - - [24/Jun/2026 04:36:53] "GET /admin HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 04:36:53] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:36:53] code 404, message File not found
+127.0.0.1 - - [24/Jun/2026 04:36:53] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [24/Jun/2026 04:37:11] "GET /admin/publish HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:41:07] "GET /admin HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 04:41:07] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:41:09] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:41:10] "GET /admin/publish HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:41:12] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 04:41:12] "GET /admin/publish HTTP/1.1" 200 -
+--------------------------------------------------------------------------------
+
+Exception occurred during processing of request from Exception occurred during processing of request from('127.0.0.1', 63739) 
+('127.0.0.1', 65523)
+Traceback (most recent call last):
+  File "D:\Qwenpaw\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "D:\Qwenpaw\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "E:\œÓƒøø‚\china-travel-website\admin_server.py", line 807, in __init__
+    super().__init__(*args, directory=SITE_DIR, **kwargs)
+  File "D:\Qwenpaw\lib\http\server.py", line 672, in __init__
+    super().__init__(*args, **kwargs)
+  File "D:\Qwenpaw\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "D:\Qwenpaw\lib\http\server.py", line 437, in handle
+    self.handle_one_request()
+  File "D:\Qwenpaw\lib\http\server.py", line 405, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "D:\Qwenpaw\lib\socket.py", line 717, in readinto
+    return self._sock.recv_into(b)
+Traceback (most recent call last):
+  File "D:\Qwenpaw\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+ConnectionResetError: [WinError 10054] ‘∂≥Ã÷˜ª˙«ø∆»πÿ±’¡À“ª∏ˆœ÷”–µƒ¡¨Ω”°£
+  File "D:\Qwenpaw\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+----------------------------------------
+  File "E:\œÓƒøø‚\china-travel-website\admin_server.py", line 807, in __init__
+    super().__init__(*args, directory=SITE_DIR, **kwargs)
+  File "D:\Qwenpaw\lib\http\server.py", line 672, in __init__
+    super().__init__(*args, **kwargs)
+  File "D:\Qwenpaw\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "D:\Qwenpaw\lib\http\server.py", line 437, in handle
+    self.handle_one_request()
+  File "D:\Qwenpaw\lib\http\server.py", line 405, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "D:\Qwenpaw\lib\socket.py", line 717, in readinto
+    return self._sock.recv_into(b)
+ConnectionResetError: [WinError 10054] ‘∂≥Ã÷˜ª˙«ø∆»πÿ±’¡À“ª∏ˆœ÷”–µƒ¡¨Ω”°£
+----------------------------------------
+127.0.0.1 - - [24/Jun/2026 05:15:46] "GET /admin/publish HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:48] "GET /admin/publish HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:50] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:51] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:56] "GET /admin/edit?path=arrival-guide&from=draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:56] "GET /articles/arrival-guide/images/01-immigration-hall.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:57] "GET /articles/arrival-guide/images/02-immigration-counter.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:57] "GET /articles/arrival-guide/images/03-customs-channels.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:15:57] "GET /articles/arrival-guide/images/04-sim-counter.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:17:23] "POST /admin/save HTTP/1.1" 302 -
+127.0.0.1 - - [24/Jun/2026 05:17:23] "GET /admin/edit?path=arrival-guide&from=draft&msg=ok%3A%E5%B7%B2%E4%BF%9D%E5%AD%98%E6%88%90%E5%8A%9F HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 05:17:24] "GET /articles/arrival-guide/images/01-immigration-hall.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [24/Jun/2026 05:17:24] "GET /articles/arrival-guide/images/02-immigration-counter.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [24/Jun/2026 05:17:24] "GET /articles/arrival-guide/images/03-customs-channels.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [24/Jun/2026 05:17:24] "GET /articles/arrival-guide/images/04-sim-counter.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [24/Jun/2026 05:17:29] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:09] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:11] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:11] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:12] "GET /admin/edit?path=arrival-guide&from=draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:13] "GET /articles/arrival-guide/images/01-immigration-hall.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:13] "GET /articles/arrival-guide/images/02-immigration-counter.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:13] "GET /articles/arrival-guide/images/05-airport-transport.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:13] "GET /articles/arrival-guide/images/03-customs-channels.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:12:13] "GET /articles/arrival-guide/images/04-sim-counter.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:15:16] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:18:30] "GET /admin/draft HTTP/1.1" 200 -
+127.0.0.1 - - [24/Jun/2026 06:18:30] code 404, message File not found
+127.0.0.1 - - [24/Jun/2026 06:18:30] "GET /favicon.ico HTTP/1.1" 404 -

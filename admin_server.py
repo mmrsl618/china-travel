@@ -531,7 +531,7 @@ def render_draft_page(msg=None):
         action_btns = f'''
 <a class="btn btn-edit" href="/admin/edit?path={fname}&from=draft">✏️ 编辑</a>
 <form method="POST" action="/admin/pass" style="display:inline"
-      onsubmit="return confirm('确认通过？将套壳生成英文版（不推送上线）')">
+      onsubmit="return confirm('确认通过？将套壳发布（不推送上线）')">
 <input type="hidden" name="path" value="{fname}">
 <button type="submit" class="btn btn-done">✅ 通过</button></form>'''
 

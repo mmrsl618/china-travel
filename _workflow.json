@@ -29,6 +29,21 @@
       "image_review": { "status": "done", "reviewer": "xiao-er", "passed": true },
       "publish": { "status": "pending" }
     },
+    "arrival-guide": {
+      "title": "China Arrival Guide",
+      "zh": { "status": "done", "file": "articles/arrival-guide/zh.html" },
+      "review": { "status": "done", "reviewer": "san-ge" },
+      "en": { "status": "pending" },
+      "images": { "status": "done", "files": [
+        "articles/arrival-guide/images/01-immigration-hall.jpg",
+        "articles/arrival-guide/images/02-immigration-counter.jpg",
+        "articles/arrival-guide/images/03-customs-channels.jpg",
+        "articles/arrival-guide/images/04-sim-counter.jpg",
+        "articles/arrival-guide/images/05-airport-transport.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "xiao-er", "passed": true },
+      "publish": { "status": "pending" }
+    },
     "mobile-payment-in-china": {
       "title": "Mobile Payment in China",
       "zh": { "status": "done", "file": "articles/mobile-payment-in-china/zh.html" },
