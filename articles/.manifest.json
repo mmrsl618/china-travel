@@ -16,5 +16,11 @@
     "section": "payment",
     "status": "online",
     "sub_category": "methods"
+  },
+  "essential-apps-for-traveling-in-china": {
+    "title": "Essential Apps for Traveling in China",
+    "section": "before-you-go",
+    "status": "en_draft",
+    "sub_category": "tools"
   }
 }

@@ -19,10 +19,17 @@
       "title": "Essential Apps for Traveling in China",
       "zh": { "status": "done", "file": "articles/essential-apps-for-traveling-in-china/zh.html" },
       "review": { "status": "done", "reviewer": "xiao-er" },
-      "en": { "status": "pending" },
-      "template": { "status": "pending" },
-      "images": { "status": "pending" },
-      "image_review": { "status": "pending" },
+      "en": { "status": "done", "file": "articles/essential-apps-for-traveling-in-china/en.html" },
+      "template": { "status": "done" },
+      "images": { "status": "done", "files": [
+        "articles/essential-apps-for-traveling-in-china/images/essential-apps-01-home-screen.jpg",
+        "articles/essential-apps-for-traveling-in-china/images/essential-apps-02-apple-maps.jpg",
+        "articles/essential-apps-for-traveling-in-china/images/essential-apps-03-didi-interface.jpg",
+        "articles/essential-apps-for-traveling-in-china/images/essential-apps-04-translation-overlay.jpg",
+        "articles/essential-apps-for-traveling-in-china/images/essential-apps-05-12306-search.jpg",
+        "articles/essential-apps-for-traveling-in-china/images/essential-apps-06-esim-activation.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "xiao-er", "passed": true },
       "publish": { "status": "pending" }
     },
     "144-hour-transit": {
@@ -43,7 +50,7 @@
       "title": "China Arrival Guide",
       "zh": { "status": "done", "file": "articles/arrival-guide/zh.html" },
       "review": { "status": "done", "reviewer": "san-ge" },
-      "en": { "status": "pending" },
+      "en": { "status": "done", "file": "articles/arrival-guide/en.html" },
       "images": { "status": "done", "files": [
         "articles/arrival-guide/images/01-immigration-hall.jpg",
         "articles/arrival-guide/images/02-immigration-counter.jpg",
@@ -52,7 +59,7 @@
         "articles/arrival-guide/images/05-airport-transport.jpg"
       ]},
       "image_review": { "status": "done", "reviewer": "xiao-er", "passed": true },
-      "publish": { "status": "pending" }
+      "publish": { "status": "done" }
     },
     "mobile-payment-in-china": {
       "title": "Mobile Payment in China",
