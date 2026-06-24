@@ -67,6 +67,36 @@
       ]},
       "image_review": { "status": "done", "reviewer": "shijuezhijian", "passed": true },
       "publish": { "status": "online" }
+    },
+    "payment-practical-tips": {
+      "title": "Payment Practical Tips",
+      "zh": { "status": "done", "file": "articles/payment-practical-tips/zh.html" },
+      "review": { "status": "done", "reviewer": "xiao-er" },
+      "images": { "status": "done", "files": [
+        "articles/payment-practical-tips/images/01-street-vendor-qr-pay.jpg",
+        "articles/payment-practical-tips/images/02-airport-atm-withdrawal.jpg",
+        "articles/payment-practical-tips/images/03-vpn-payment-phone.jpg",
+        "articles/payment-practical-tips/images/04-restaurant-qr-payment.jpg",
+        "articles/payment-practical-tips/images/05-taxi-meter-payment-check.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "xiao-er", "passed": true },
+      "template": { "status": "pending" },
+      "publish": { "status": "pending" }
+    },
+    "stay-china": {
+      "title": "Where to Stay in China",
+      "zh": { "status": "done", "file": "articles/stay-china/zh.html" },
+      "review": { "status": "done", "reviewer": "xiao-er" },
+      "images": { "status": "done", "files": [
+        "articles/stay-china/images/stay-01-hotel-checkin.jpg",
+        "articles/stay-china/images/stay-02-booking-platform.jpg",
+        "articles/stay-china/images/stay-03-midrange-room.jpg",
+        "articles/stay-china/images/stay-04-registration-desk.jpg",
+        "articles/stay-china/images/stay-05-city-neighbourhood.jpg"
+      ]},
+      "image_review": { "status": "done", "reviewer": "sjsj", "passed": true },
+      "template": { "status": "pending" },
+      "publish": { "status": "draft" }
     }
   }
 }
