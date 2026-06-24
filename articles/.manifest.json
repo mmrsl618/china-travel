@@ -62,7 +62,7 @@
   "stay-china": {
     "title": "Where to Stay in China",
     "section": "stay",
-    "status": "en_draft",
+    "status": "online",
     "sub_category": "accommodations"
   },
   "how-to-order-food-in-china": {
@@ -76,5 +76,17 @@
     "section": "transportation",
     "status": "online",
     "sub_category": "local"
+  },
+  "china-airport-arrival-step-by-step": {
+    "title": "China Airport Arrival — Step by Step from Plane to City",
+    "section": "before-you-go",
+    "status": "en_draft",
+    "sub_category": "arrival"
+  },
+  "7-day-china-itinerary": {
+    "title": "Classic 7-Day China Itinerary — Beijing, Xi'an, Shanghai",
+    "section": "explore",
+    "status": "en_draft",
+    "sub_category": "itineraries"
   }
 }
