@@ -696,7 +696,7 @@ def render_edit_page(fname, return_to='draft', msg=None):
     sub_category = info.get('sub_category', '')
 
     if not is_new:
-        # 优先读 zh.html 源文件
+        # 优先读 zh.html 源文件（用户的工作副本）
         sp = source_path(fname)
         src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
         if src_content:
@@ -713,13 +713,21 @@ def render_edit_page(fname, return_to='draft', msg=None):
             # 剥掉可能从之前发布带回来的面包屑
             content = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', content, flags=re.DOTALL)
             content = content.strip()
-            # 从已发布文章恢复
+
+        # 如果 zh.html 为空，尝试从已发布文章（en.html）恢复
+        if not content:
             pp = published_path(fname)
             pub_content, _ = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
             if pub_content:
                 m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
                 body = m.group(1).strip() if m else pub_content
+                # 剥离 en.html 中已有的 <h1>（避免和合成的标题重复）
+                body = re.sub(r'\s*<h1[^>]*>.*?</h1>\s*', '', body, count=1, flags=re.DOTALL)
+                # 剥离面包屑
+                body = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', body, flags=re.DOTALL)
+                body = body.strip()
                 content = f'<h1>{html_escape(title)}</h1>\n{body}' if title else body
+
         if not content and title:
             content = f'<h1>{html_escape(title)}</h1>'
 

@@ -29,58 +29,52 @@
     "status": "online",
     "sub_category": "trains"
   },
-  "beijing-travel-guide": {
-    "title": "Beijing Travel Guide",
-    "section": "explore",
-    "status": "draft",
-    "sub_category": "cities"
-  },
-  "local-transport-in-china": {
-    "title": "Local Transport in China — Metro, Bus, Taxi, Bike, and Navigation",
-    "section": "transportation",
-    "status": "draft",
-    "sub_category": "local"
-  },
-  "vpn-china": {
-    "title": "VPN for China: What You Need Before You Land",
-    "section": "before-you-go",
-    "status": "draft",
-    "sub_category": "tools"
-  },
   "payment-practical-tips": {
-    "title": "Payment Practical Tips — Cash, VPN, and Everyday Payments in China",
+    "title": "Practical Payment Tips for China",
     "section": "payment",
-    "status": "draft",
+    "status": "en_draft",
     "sub_category": "tips"
   },
   "flights-in-china": {
     "title": "Flying to and Within China — A Complete Flight Guide",
     "section": "transportation",
-    "status": "draft",
+    "status": "en_draft",
     "sub_category": "flights"
+  },
+  "beijing-travel-guide": {
+    "title": "Beijing Travel Guide",
+    "section": "explore",
+    "status": "en_draft",
+    "sub_category": "cities"
+  },
+  "local-transport-in-china": {
+    "title": "Local Transport in China — Metro, Bus, Taxi, Bike, and Navigation",
+    "section": "transportation",
+    "status": "en_draft",
+    "sub_category": "local"
+  },
+  "vpn-china": {
+    "title": "VPN for China: What You Need Before You Land",
+    "section": "before-you-go",
+    "status": "en_draft",
+    "sub_category": "tools"
   },
   "stay-china": {
     "title": "Where to Stay in China",
     "section": "stay",
-    "status": "draft",
+    "status": "en_draft",
     "sub_category": "accommodations"
   },
-  "chinese-food-first-time-guide": {
-    "title": "Essential Chinese Food Guide for First-Time Visitors",
+  "how-to-order-food-in-china": {
+    "title": "How to Order Food in China — From QR Codes to Food Delivery",
     "section": "explore",
-    "status": "draft",
+    "status": "en_draft",
     "sub_category": "food"
   },
-  "regional-chinese-cuisines-guide": {
-    "title": "Regional Chinese Cuisines: What to Eat Where",
-    "section": "explore",
-    "status": "draft",
-    "sub_category": "food"
-  },
-  "classic-china-beijing-xian-shanghai": {
-    "title": "Classic China: Beijing, Xi'an, Shanghai in 10 Days",
-    "section": "explore",
-    "status": "draft",
-    "sub_category": "itineraries"
+  "ride-hailing-taxis-china": {
+    "title": "Ride-Hailing and Taxis in China — A Complete Guide",
+    "section": "transportation",
+    "status": "en_draft",
+    "sub_category": "local"
   }
 }
