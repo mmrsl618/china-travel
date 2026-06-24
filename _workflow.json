@@ -15,6 +15,16 @@
       "image_review": { "status": "done", "reviewer": "shijuezhijian", "passed": true },
       "publish": { "status": "pending" }
     },
+    "essential-apps-for-traveling-in-china": {
+      "title": "Essential Apps for Traveling in China",
+      "zh": { "status": "done", "file": "articles/essential-apps-for-traveling-in-china/zh.html" },
+      "review": { "status": "done", "reviewer": "xiao-er" },
+      "en": { "status": "pending" },
+      "template": { "status": "pending" },
+      "images": { "status": "pending" },
+      "image_review": { "status": "pending" },
+      "publish": { "status": "pending" }
+    },
     "144-hour-transit": {
       "title": "China 144-Hour Transit Policy",
       "zh": { "status": "done", "file": "articles/144-hour-transit/zh.html" },
