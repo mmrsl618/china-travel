@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>eSIM Activation - iOS Settings</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif; }
+.phone-frame { width: 393px; height: 852px; background: #000; border-radius: 50px; padding: 12px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.phone-screen { width: 100%; height: 100%; background: #f2f2f7; border-radius: 40px; overflow: hidden; position: relative; }
+.dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 126px; height: 36px; background: #000; border-radius: 0 0 24px 24px; z-index: 100; }
+.status-bar { height: 54px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 28px 8px; font-size: 15px; font-weight: 600; position: sticky; top: 0; z-index: 99; }
+.status-bar-right { display: flex; align-items: center; gap: 4px; }
+.signal-bars { display: flex; gap: 2px; align-items: flex-end; height: 12px; }
+.signal-bars span { width: 3px; background: #000; border-radius: 1px; }
+.signal-bars span:nth-child(1) { height: 3px; }
+.signal-bars span:nth-child(2) { height: 5px; }
+.signal-bars span:nth-child(3) { height: 8px; }
+.signal-bars span:nth-child(4) { height: 11px; }
+.wifi-icon { font-size: 16px; }
+.battery { width: 25px; height: 12px; border: 1.5px solid #000; border-radius: 3px; position: relative; }
+.battery::after { content: ''; position: absolute; right: -4px; top: 2px; width: 2px; height: 5px; background: #000; border-radius: 0 1px 1px 0; }
+.battery-level { width: 75%; height: 100%; background: #000; border-radius: 1.5px; }
+
+/* Settings header */
+.settings-header { background: #f2f2f7; padding: 0 16px; position: sticky; top: 54px; z-index: 50; }
+.nav-row { display: flex; align-items: center; padding: 4px 0 8px; }
+.back-link { color: #007aff; font-size: 17px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.back-arrow { font-size: 22px; line-height: 1; }
+.page-title { flex: 1; text-align: center; font-size: 17px; font-weight: 600; color: #000; margin-right: 40px; }
+
+/* Section */
+.settings-content { padding: 0 16px; }
+.section-title { font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 6px; }
+.settings-group { background: #fff; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 0.5px 1px rgba(0,0,0,0.04); }
+.settings-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid #e5e5e5; }
+.settings-row:last-child { border-bottom: none; }
+.row-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 12px; flex-shrink: 0; }
+.row-icon.blue { background: #007aff; color: #fff; }
+.row-icon.green { background: #34c759; color: #fff; }
+.row-icon.orange { background: #ff9500; color: #fff; }
+.row-icon.red { background: #ff3b30; color: #fff; }
+.row-icon.gray { background: #8e8e93; color: #fff; }
+.row-icon.teal { background: #5ac8fa; color: #fff; }
+.row-content { flex: 1; min-width: 0; }
+.row-title { font-size: 16px; color: #000; }
+.row-subtitle { font-size: 13px; color: #888; margin-top: 1px; }
+.row-detail { font-size: 16px; color: #888; margin-left: 8px; }
+.row-chevron { color: #c5c5c7; font-size: 14px; margin-left: 4px; }
+
+/* eSIM plan card */
+.esim-plan-card { background: #fff; border-radius: 12px; margin: 0 16px 20px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.esim-plan-header { background: linear-gradient(135deg, #007aff, #0052d9); padding: 20px 16px; color: #fff; }
+.esim-plan-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.esim-plan-label { font-size: 13px; opacity: 0.8; }
+.esim-plan-body { padding: 16px; }
+.plan-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; }
+.plan-row:last-child { border-bottom: none; }
+.plan-label { font-size: 15px; color: #333; }
+.plan-value { font-size: 15px; color: #000; font-weight: 500; }
+.plan-value.highlight { color: #007aff; font-weight: 700; }
+
+/* Activate button */
+.activate-btn { margin: 0 16px 20px; height: 52px; background: #007aff; color: #fff; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; width: calc(100% - 32px); }
+
+/* QR Code placeholder */
+.qr-section { background: #fff; border-radius: 12px; margin: 0 16px 20px; padding: 20px; text-align: center; }
+.qr-code { width: 180px; height: 180px; margin: 0 auto 12px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.qr-grid { display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(11, 1fr); width: 150px; height: 150px; gap: 1px; }
+.qr-cell { background: #000; }
+.qr-cell.white { background: #fff; }
+.qr-hint { font-size: 13px; color: #888; }
+
+.home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background: #000; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="dynamic-island"></div>
+
+<!-- Status Bar -->
+<div class="status-bar" style="color:#000;">
+<div class="status-bar-left">18:45</div>
+<div class="status-bar-right">
+<div class="signal-bars"><span></span><span></span><span></span><span></span></div>
+<span class="wifi-icon">📶</span>
+<div class="battery"><div class="battery-level"></div></div>
+</div>
+</div>
+
+<!-- Settings Header -->
+<div class="settings-header">
+<div class="nav-row">
+<span class="back-link"><span class="back-arrow">‹</span> Settings</span>
+<span class="page-title">Cellular</span>
+</div>
+</div>
+
+<!-- Content -->
+<div class="settings-content">
+<!-- Cellular Data Lines -->
+<div class="section-title">CELLULAR DATA LINE</div>
+<div class="settings-group">
+<div class="settings-row">
+<div class="row-icon teal">📱</div>
+<div class="row-content">
+<div class="row-title">China Mobile eSIM</div>
+<div class="row-subtitle">China · Data Only</div>
+</div>
+<span class="row-detail" style="color:#34c759;font-size:13px;">On</span>
+<span class="row-chevron">›</span>
+</div>
+</div>
+
+<!-- eSIM Plan Details -->
+<div class="section-title">eSIM PLAN DETAILS</div>
+<div class="esim-plan-card">
+<div class="esim-plan-header">
+<div class="esim-plan-title">🇨🇳 China Data Plan</div>
+<div class="esim-plan-label">China Mobile · Prepaid eSIM</div>
+</div>
+<div class="esim-plan-body">
+<div class="plan-row">
+<span class="plan-label">Data Allowance</span>
+<span class="plan-value highlight">10 GB</span>
+</div>
+<div class="plan-row">
+<span class="plan-label">Validity Period</span>
+<span class="plan-value">30 Days</span>
+</div>
+<div class="plan-row">
+<span class="plan-label">Carrier</span>
+<span class="plan-value">China Mobile</span>
+</div>
+<div class="plan-row">
+<span class="plan-label">Price</span>
+<span class="plan-value">¥89.00</span>
+</div>
+<div class="plan-row">
+<span class="plan-label">Status</span>
+<span class="plan-value" style="color:#34c759;">Active</span>
+</div>
+<div class="plan-row">
+<span class="plan-label">Data Used</span>
+<span class="plan-value">2.3 GB / 10 GB</span>
+</div>
+</div>
+</div>
+
+<!-- Install another eSIM -->
+<div class="section-title">MORE OPTIONS</div>
+<div class="settings-group">
+<div class="settings-row">
+<div class="row-icon green">＋</div>
+<div class="row-content">
+<div class="row-title">Add eSIM...</div>
+</div>
+<span class="row-chevron">›</span>
+</div>
+<div class="settings-row">
+<div class="row-icon gray">📷</div>
+<div class="row-content">
+<div class="row-title">Restore Purchases</div>
+</div>
+<span class="row-chevron">›</span>
+</div>
+</div>
+
+<!-- QR Code section -->
+<div class="section-title">SCAN QR CODE FROM CARRIER</div>
+<div class="qr-section">
+<div class="qr-code">
+<svg width="150" height="150" viewBox="0 0 150 150">
+<!-- QR code pattern -->
+<rect x="5" y="5" width="40" height="40" fill="#000" rx="2"/>
+<rect x="10" y="10" width="30" height="30" fill="#fff" rx="1"/>
+<rect x="15" y="15" width="20" height="20" fill="#000" rx="1"/>
+
+<rect x="105" y="5" width="40" height="40" fill="#000" rx="2"/>
+<rect x="110" y="10" width="30" height="30" fill="#fff" rx="1"/>
+<rect x="115" y="15" width="20" height="20" fill="#000" rx="1"/>
+
+<rect x="5" y="105" width="40" height="40" fill="#000" rx="2"/>
+<rect x="10" y="110" width="30" height="30" fill="#fff" rx="1"/>
+<rect x="15" y="115" width="20" height="20" fill="#000" rx="1"/>
+
+<!-- Data modules row 1 -->
+<rect x="50" y="5" width="8" height="8" fill="#000"/>
+<rect x="66" y="5" width="8" height="8" fill="#000"/>
+<rect x="82" y="5" width="8" height="8" fill="#000"/>
+<rect x="50" y="21" width="8" height="8" fill="#000"/>
+<rect x="74" y="21" width="8" height="8" fill="#000"/>
+<rect x="90" y="21" width="8" height="8" fill="#000"/>
+<rect x="58" y="37" width="8" height="8" fill="#000"/>
+<rect x="82" y="37" width="8" height="8" fill="#000"/>
+
+<!-- Data modules row 2 -->
+<rect x="5" y="50" width="8" height="8" fill="#000"/>
+<rect x="21" y="50" width="8" height="8" fill="#000"/>
+<rect x="45" y="50" width="8" height="8" fill="#000"/>
+<rect x="66" y="50" width="8" height="8" fill="#000"/>
+<rect x="90" y="50" width="8" height="8" fill="#000"/>
+<rect x="115" y="50" width="8" height="8" fill="#000"/>
+<rect x="135" y="50" width="8" height="8" fill="#000"/>
+<rect x="10" y="66" width="8" height="8" fill="#000"/>
+<rect x="37" y="66" width="8" height="8" fill="#000"/>
+<rect x="58" y="66" width="8" height="8" fill="#000"/>
+<rect x="82" y="66" width="8" height="8" fill="#000"/>
+<rect x="105" y="66" width="8" height="8" fill="#000"/>
+<rect x="125" y="66" width="8" height="8" fill="#000"/>
+<rect x="21" y="82" width="8" height="8" fill="#000"/>
+<rect x="45" y="82" width="8" height="8" fill="#000"/>
+<rect x="74" y="82" width="8" height="8" fill="#000"/>
+<rect x="90" y="82" width="8" height="8" fill="#000"/>
+<rect x="115" y="82" width="8" height="8" fill="#000"/>
+<rect x="135" y="82" width="8" height="8" fill="#000"/>
+
+<!-- More data -->
+<rect x="50" y="105" width="8" height="8" fill="#000"/>
+<rect x="74" y="105" width="8" height="8" fill="#000"/>
+<rect x="90" y="105" width="8" height="8" fill="#000"/>
+<rect x="115" y="105" width="8" height="8" fill="#000"/>
+<rect x="135" y="105" width="8" height="8" fill="#000"/>
+<rect x="58" y="121" width="8" height="8" fill="#000"/>
+<rect x="82" y="121" width="8" height="8" fill="#000"/>
+<rect x="105" y="121" width="8" height="8" fill="#000"/>
+<rect x="125" y="121" width="8" height="8" fill="#000"/>
+<rect x="50" y="137" width="8" height="8" fill="#000"/>
+<rect x="66" y="137" width="8" height="8" fill="#000"/>
+<rect x="90" y="137" width="8" height="8" fill="#000"/>
+<rect x="115" y="137" width="8" height="8" fill="#000"/>
+<rect x="135" y="137" width="8" height="8" fill="#000"/>
+</svg>
+</div>
+<div class="qr-hint">Ask your carrier for the QR code</div>
+</div>
+
+<button class="activate-btn">Manage eSIM</button>
+</div>
+
+<div class="home-indicator"></div>
+</div>
+</div>
+</body>
+</html>

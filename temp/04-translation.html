@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Translation App - Camera Mode</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif; }
+.phone-frame { width: 393px; height: 852px; background: #000; border-radius: 50px; padding: 12px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.phone-screen { width: 100%; height: 100%; position: relative; overflow: hidden; border-radius: 40px; }
+.notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #000; border-radius: 0 0 20px 20px; z-index: 100; }
+.status-bar { height: 54px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 28px 8px; font-size: 15px; font-weight: 600; position: sticky; top: 0; z-index: 99; }
+
+/* Restaurant background */
+.restaurant-bg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #f5e6d0 0%, #e8d5b8 40%, #d4c0a0 100%); z-index: 1; }
+.table-surface { position: absolute; left: 0; bottom: 0; width: 100%; height: 55%; background: linear-gradient(180deg, #c4a265 0%, #b08d50 100%); z-index: 1; }
+
+/* Menu card */
+.menu-card { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); width: 300px; background: #fffef5; border-radius: 4px; padding: 20px 18px; z-index: 2; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+.menu-title { text-align: center; font-size: 16px; color: #333; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e0d8c0; }
+.menu-item { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px dotted #ddd; }
+.menu-item:last-child { border-bottom: none; }
+.item-name-cn { font-size: 14px; color: #333; font-weight: 500; }
+.item-price { font-size: 13px; color: #c44; font-weight: 600; white-space: nowrap; margin-left: 8px; }
+.item-desc { font-size: 10px; color: #999; margin-top: 2px; }
+
+/* Translation overlay */
+.translation-overlay { position: absolute; z-index: 10; background: rgba(255,255,255,0.92); border-radius: 6px; padding: 6px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 12px; color: #1a1a1a; line-height: 1.5; max-width: 180px; }
+.translation-overlay .en { font-weight: 600; font-size: 13px; color: #000; }
+.translation-overlay .cn { font-size: 11px; color: #888; margin-top: 2px; }
+.translation-overlay .arrow { color: #00b4ff; margin: 0 4px; font-size: 11px; }
+
+/* Camera frame */
+.camera-frame { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 320px; height: 480px; z-index: 20; }
+.camera-corner { position: absolute; width: 30px; height: 30px; border-color: #00b4ff; border-style: solid; border-width: 0; }
+.camera-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; }
+.camera-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; }
+.camera-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; }
+.camera-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; }
+
+/* App header */
+.app-header { position: absolute; top: 54px; left: 0; right: 0; height: 48px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(10px); }
+.app-title { color: #fff; font-size: 15px; font-weight: 600; }
+.mode-tabs { position: absolute; top: 102px; left: 0; right: 0; display: flex; justify-content: center; gap: 0; z-index: 50; }
+.mode-tab { padding: 8px 20px; font-size: 14px; color: #fff; background: rgba(0,0,0,0.4); cursor: pointer; }
+.mode-tab.active { background: #00b4ff; font-weight: 600; }
+.mode-tab:not(.active) { opacity: 0.8; }
+
+/* Camera controls */
+.camera-controls { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: space-around; padding: 0 40px; z-index: 50; backdrop-filter: blur(10px); }
+.shutter-btn { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff; background: transparent; cursor: pointer; position: relative; }
+.shutter-btn::after { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; background: #fff; border-radius: 50%; }
+.ctrl-icon { color: #fff; font-size: 24px; cursor: pointer; }
+
+.lang-selector { position: absolute; top: 150px; left: 16px; right: 16px; display: flex; justify-content: space-between; z-index: 50; }
+.lang-chip { background: rgba(0,0,0,0.5); color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; backdrop-filter: blur(10px); }
+.swap-btn { background: rgba(0,180,255,0.8); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; align-self: center; margin-top: -4px; }
+
+/* Scan line animation indicator */
+.scan-line { position: absolute; left: 10%; right: 10%; height: 2px; background: rgba(0,180,255,0.6); z-index: 25; }
+
+/* Flash effect */
+.flash-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #fff; opacity: 0; z-index: 200; }
+
+/* Hand holding phone hint - subtle shadow */
+.hand-shadow { position: absolute; bottom: -20px; left: -30px; right: -30px; height: 60px; background: radial-gradient(ellipse, rgba(0,0,0,0.1) 0%, transparent 70%); z-index: 0; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+
+<!-- Restaurant scene -->
+<div class="restaurant-bg"></div>
+<div class="table-surface"></div>
+
+<!-- Menu -->
+<div class="menu-card">
+<div class="menu-title">北京饭店 · 菜单</div>
+<div class="menu-item">
+<div>
+<div class="item-name-cn">宫保鸡丁</div>
+<div class="item-desc">Spicy diced chicken with peanuts</div>
+</div>
+<div class="item-price">¥ 58</div>
+</div>
+<div class="menu-item">
+<div>
+<div class="item-name-cn">麻婆豆腐</div>
+<div class="item-desc">Mapo tofu with minced pork</div>
+</div>
+<div class="item-price">¥ 38</div>
+</div>
+<div class="menu-item">
+<div>
+<div class="item-name-cn">红烧肉</div>
+<div class="item-desc">Braised pork belly in soy sauce</div>
+</div>
+<div class="item-price">¥ 78</div>
+</div>
+<div class="menu-item">
+<div>
+<div class="item-name-cn">鱼香肉丝</div>
+<div class="item-desc">Shredded pork in garlic sauce</div>
+</div>
+<div class="item-price">¥ 52</div>
+</div>
+<div class="menu-item">
+<div>
+<div class="item-name-cn">清蒸鲈鱼</div>
+<div class="item-desc">Steamed sea bass with ginger</div>
+</div>
+<div class="item-price">¥ 98</div>
+</div>
+<div class="menu-item">
+<div>
+<div class="item-name-cn">西红柿炒鸡蛋</div>
+<div class="item-desc">Tomato and egg stir-fry</div>
+</div>
+<div class="item-price">¥ 28</div>
+</div>
+</div>
+
+<!-- Camera frame corners -->
+<div class="camera-frame">
+<div class="camera-corner tl"></div>
+<div class="camera-corner tr"></div>
+<div class="camera-corner bl"></div>
+<div class="camera-corner br"></div>
+</div>
+
+<!-- Translation overlays on menu items -->
+<div class="translation-overlay" style="left: 56%; top: 33%;">
+<div><span class="en">Kung Pao Chicken</span><span class="arrow">→</span><span class="cn">宫保鸡丁</span></div>
+<div class="item-desc" style="margin-top:2px;">Spicy diced chicken with peanuts</div>
+</div>
+
+<div class="translation-overlay" style="left: 56%; top: 42%;">
+<div><span class="en">Mapo Tofu</span><span class="arrow">→</span><span class="cn">麻婆豆腐</span></div>
+<div class="item-desc" style="margin-top:2px;">Silken tofu in spicy sauce</div>
+</div>
+
+<div class="translation-overlay" style="left: 56%; top: 51%;">
+<div><span class="en">Braised Pork Belly</span><span class="arrow">→</span><span class="cn">红烧肉</span></div>
+<div class="item-desc" style="margin-top:2px;">Slow-cooked in soy sauce</div>
+</div>
+
+<div class="translation-overlay" style="left: 56%; top: 60%;">
+<div><span class="en">Fish-Flavored Shredded Pork</span><span class="arrow">→</span><span class="cn">鱼香肉丝</span></div>
+<div class="item-desc" style="margin-top:2px;">With pickled chili and garlic</div>
+</div>
+
+<div class="translation-overlay" style="left: 56%; top: 69%;">
+<div><span class="en">Steamed Sea Bass</span><span class="arrow">→</span><span class="cn">清蒸鲈鱼</span></div>
+<div class="item-desc" style="margin-top:2px;">With ginger and scallion</div>
+</div>
+
+<!-- App header -->
+<div class="app-header">
+<span class="app-title">百度翻译 · Camera</span>
+</div>
+
+<!-- Language selector -->
+<div class="lang-selector">
+<div class="lang-chip">Chinese</div>
+<div class="swap-btn">⇄</div>
+<div class="lang-chip">English</div>
+</div>
+
+<!-- Mode tabs -->
+<div class="mode-tabs">
+<div class="mode-tab">Text</div>
+<div class="mode-tab active">Camera</div>
+<div class="mode-tab">Conversation</div>
+<div class="mode-tab">Document</div>
+</div>
+
+<!-- Camera controls -->
+<div class="camera-controls">
+<span class="ctrl-icon">⚡</span>
+<span class="ctrl-icon">🔄</span>
+<div class="shutter-btn"></div>
+<span class="ctrl-icon">🖼</span>
+<span class="ctrl-icon">⚙</span>
+</div>
+
+</div>
+</div>
+</body>
+</html>

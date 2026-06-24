@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Apple Maps - Shanghai Walking Route</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif; }
+.phone-frame { width: 393px; height: 852px; background: #000; border-radius: 50px; padding: 12px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.phone-screen { width: 100%; height: 100%; background: #f0ebe3; border-radius: 40px; overflow: hidden; position: relative; }
+.notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #000; border-radius: 0 0 20px 20px; z-index: 100; }
+.status-bar { height: 54px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 28px 8px; font-size: 15px; font-weight: 600; position: sticky; top: 0; z-index: 99; }
+.status-bar-right { display: flex; align-items: center; gap: 4px; }
+.signal-bars { display: flex; gap: 2px; align-items: flex-end; height: 12px; }
+.signal-bars span { width: 3px; background: #000; border-radius: 1px; }
+.signal-bars span:nth-child(1) { height: 3px; }
+.signal-bars span:nth-child(2) { height: 5px; }
+.signal-bars span:nth-child(3) { height: 8px; }
+.signal-bars span:nth-child(4) { height: 11px; }
+.battery { width: 25px; height: 12px; border: 1.5px solid #000; border-radius: 3px; position: relative; }
+.battery::after { content: ''; position: absolute; right: -4px; top: 2px; width: 2px; height: 5px; background: #000; border-radius: 0 1px 1px 0; }
+.battery-level { width: 75%; height: 100%; background: #000; border-radius: 1.5px; }
+
+.search-bar { position: absolute; top: 60px; left: 16px; right: 16px; height: 44px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: flex; align-items: center; padding: 0 14px; z-index: 50; }
+.search-icon { width: 18px; height: 18px; border: 2px solid #888; border-radius: 50%; position: relative; margin-right: 8px; }
+.search-icon::after { content: ''; position: absolute; bottom: -4px; right: -5px; width: 6px; height: 2px; background: #888; transform: rotate(45deg); }
+.search-text { font-size: 16px; color: #999; }
+
+.direction-card { position: absolute; bottom: 100px; left: 16px; right: 16px; background: #fff; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 50; overflow: hidden; }
+.direction-header { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #eee; }
+.direction-dot { width: 10px; height: 10px; background: #007aff; border-radius: 50%; margin-right: 12px; flex-shrink: 0; }
+.direction-info { flex: 1; }
+.direction-dest { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+.direction-address { font-size: 12px; color: #888; margin-top: 2px; }
+.direction-duration { text-align: right; }
+.direction-time { font-size: 28px; font-weight: 700; color: #007aff; }
+.direction-mins { font-size: 13px; color: #007aff; }
+.direction-steps { padding: 12px 16px; }
+.step-item { display: flex; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #f5f5f5; }
+.step-arrow { font-size: 16px; color: #007aff; margin-right: 10px; flex-shrink: 0; width: 20px; text-align: center; }
+.step-text { font-size: 14px; color: #333; line-height: 1.4; }
+.step-distance { font-size: 12px; color: #888; margin-top: 2px; }
+.start-btn { margin: 4px 16px 16px; height: 52px; background: #007aff; color: #fff; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; width: calc(100% - 32px); }
+
+.map-controls { position: absolute; right: 16px; bottom: 240px; display: flex; flex-direction: column; gap: 10px; z-index: 50; }
+.map-control-btn { width: 40px; height: 40px; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #333; }
+.location-btn-wrap { position: absolute; right: 16px; bottom: 280px; z-index: 50; }
+.location-btn { width: 40px; height: 40px; background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; }
+.loc-icon { width: 16px; height: 16px; border: 2px solid #007aff; border-radius: 50%; position: relative; }
+.loc-icon::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: #007aff; border-radius: 50%; }
+
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 83px; background: #fff; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px; z-index: 50; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.nav-label { font-size: 10px; }
+.home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background: #000; border-radius: 3px; }
+
+/* Map elements */
+.map-bg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.river { position: absolute; left: 55%; top: 0; width: 90px; height: 100%; background: #a8d5e2; transform: skewX(-15deg); }
+.land-west { position: absolute; left: 0; top: 0; width: 55%; height: 100%; background: #e8e3d9; }
+.land-east { position: absolute; left: calc(55% + 90px); top: 0; width: 45%; height: 100%; background: #e8e3d9; }
+.park { position: absolute; background: #b8d4a3; border-radius: 8px; }
+.building { position: absolute; background: #d4cfd6; border-radius: 2px; }
+
+.street-label { position: absolute; font-size: 8px; color: #666; white-space: nowrap; font-weight: 500; }
+.place-label { position: absolute; font-size: 10px; color: #333; font-weight: 600; white-space: nowrap; }
+.waypoint-label { position: absolute; font-size: 9px; color: #555; background: rgba(255,255,255,0.85); padding: 1px 4px; border-radius: 3px; white-space: nowrap; }
+
+.blue-dot { position: absolute; z-index: 25; }
+.blue-dot-ring { width: 20px; height: 20px; background: rgba(0,122,255,0.2); border-radius: 50%; position: absolute; top: -2px; left: -2px; }
+.blue-dot-core { width: 12px; height: 12px; background: #007aff; border-radius: 50%; position: relative; border: 2px solid #fff; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+<div class="phone-screen">
+<div class="notch"></div>
+
+<!-- Status Bar -->
+<div class="status-bar" style="color:#000;">
+<div class="status-bar-left">9:41</div>
+<div class="status-bar-right">
+<div class="signal-bars"><span></span><span></span><span></span><span></span></div>
+<div class="battery"><div class="battery-level"></div></div>
+</div>
+</div>
+
+<!-- Map Background -->
+<div class="map-bg">
+<div class="river"></div>
+<div class="land-west"></div>
+<div class="land-east"></div>
+
+<!-- Parks -->
+<div class="park" style="left:8%;top:22%;width:55px;height:70px;"></div>
+<div class="park" style="left:62%;top:28%;width:50px;height:55px;"></div>
+<div class="park" style="left:3%;top:55%;width:40px;height:45px;"></div>
+
+<!-- Buildings -->
+<div class="building" style="left:18%;top:20%;width:18px;height:12px;"></div>
+<div class="building" style="left:22%;top:20%;width:14px;height:10px;"></div>
+<div class="building" style="left:18%;top:35%;width:16px;height:10px;"></div>
+<div class="building" style="left:35%;top:50%;width:20px;height:12px;"></div>
+<div class="building" style="left:40%;top:65%;width:14px;height:10px;"></div>
+<div class="building" style="left:62%;top:20%;width:18px;height:12px;"></div>
+<div class="building" style="left:68%;top:35%;width:16px;height:10px;"></div>
+<div class="building" style="left:72%;top:50%;width:20px;height:12px;"></div>
+<div class="building" style="left:78%;top:65%;width:14px;height:10px;"></div>
+
+<!-- Roads -->
+<!-- Horizontal major -->
+<div style="position:absolute;left:0;top:14%;width:55%;height:10px;background:#f5f0e8;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<div style="position:absolute;left:0;top:49%;width:55%;height:10px;background:#f5f0e8;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<!-- Horizontal minor -->
+<div style="position:absolute;left:0;top:28%;width:55%;height:6px;background:#fff;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<div style="position:absolute;left:0;top:42%;width:55%;height:6px;background:#fff;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<div style="position:absolute;left:0;top:56%;width:55%;height:6px;background:#fff;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<div style="position:absolute;left:0;top:70%;width:55%;height:6px;background:#fff;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<div style="position:absolute;left:0;top:84%;width:55%;height:6px;background:#fff;border-top:1px solid #ddd;border-bottom:1px solid #ddd;"></div>
+<!-- Vertical -->
+<div style="position:absolute;left:15%;top:0;width:6px;height:100%;background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;"></div>
+<div style="position:absolute;left:28%;top:0;width:6px;height:100%;background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;"></div>
+<div style="position:absolute;left:42%;top:0;width:6px;height:100%;background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;"></div>
+<div style="position:absolute;left:20%;top:0;width:10px;height:100%;background:#f5f0e8;border-left:1px solid #ccc;border-right:1px solid #ccc;"></div>
+
+<!-- Lujiazui Skyline -->
+<!-- Oriental Pearl Tower -->
+<div style="position:absolute;left:63%;top:22%;width:2px;height:55px;background:#999;z-index:5;"></div>
+<div style="position:absolute;left:60%;top:26%;width:8px;height:8px;background:#e44;border-radius:50%;z-index:5;"></div>
+<div style="position:absolute;left:60%;top:42%;width:8px;height:8px;background:#e44;border-radius:50%;z-index:5;"></div>
+<div style="position:absolute;left:61%;top:30%;width:6px;height:12px;background:#f66;border-radius:50%;z-index:5;"></div>
+<!-- Shanghai Tower -->
+<div style="position:absolute;left:70%;top:16%;width:6px;height:70px;background:linear-gradient(to bottom,#abc,#889);z-index:5;border-radius:2px;"></div>
+<!-- SWFC -->
+<div style="position:absolute;left:66%;top:22%;width:5px;height:55px;background:linear-gradient(to bottom,#bcd,#99a);z-index:5;border-radius:1px;"></div>
+<!-- Jin Mao -->
+<div style="position:absolute;left:74%;top:28%;width:5px;height:45px;background:linear-gradient(to bottom,#cdd,#aab);z-index:5;border-radius:1px;"></div>
+
+<!-- Street labels -->
+<div class="street-label" style="left:12%;top:13%;transform:rotate(-1deg);">Nanjing E Rd</div>
+<div class="street-label" style="left:12%;top:27%;transform:rotate(0deg);">Henan Middle Rd</div>
+<div class="street-label" style="left:12%;top:41%;transform:rotate(-1deg);">Xizang Middle Rd</div>
+<div class="street-label" style="left:12%;top:55%;transform:rotate(0deg);">Sichuan N Rd</div>
+<div class="street-label" style="left:12%;top:69%;transform:rotate(-1deg);">Fuzhou Rd</div>
+<div class="street-label" style="left:12%;top:83%;transform:rotate(0deg);">Yinchun Rd</div>
+<div class="street-label" style="left:3%;top:25%;transform:rotate(89deg);">Jiangxi Rd</div>
+<div class="street-label" style="left:3%;top:52%;transform:rotate(89deg);">Shaanxi N Rd</div>
+
+<!-- Place labels -->
+<div class="place-label" style="left:4%;top:18%;">People's Square</div>
+<div class="place-label" style="left:62%;top:13%;font-size:11px;color:#007aff;">The Bund</div>
+<div class="place-label" style="left:78%;top:32%;font-size:9px;color:#555;">Lujiazui</div>
+<div class="waypoint-label" style="left:2%;top:52%;">East Nanjing Rd</div>
+
+<!-- Blue dot (current location) -->
+<div class="blue-dot" style="left:46%;top:58%;">
+<div class="blue-dot-ring"></div>
+<div class="blue-dot-core"></div>
+</div>
+
+<!-- Walking route SVG -->
+<svg style="position:absolute;left:0;top:0;width:100%;height:100%;z-index:20;" viewBox="0 0 393 852">
+<path d="M 170 580 L 170 500 L 210 460 L 210 400 L 250 360 L 250 300 L 280 270" stroke="#4a90d9" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Arrow at end -->
+<polygon points="280,262 272,278 288,278" fill="#4a90d9"/>
+<!-- Start circle -->
+<circle cx="170" cy="580" r="10" fill="#007aff" stroke="#fff" stroke-width="3"/>
+<text x="170" y="584" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">A</text>
+<!-- Destination square -->
+<rect x="270" y="258" width="20" height="24" rx="3" fill="#007aff"/>
+<text x="280" y="274" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">B</text>
+</svg>
+</div>
+
+<!-- Search bar -->
+<div class="search-bar">
+<div class="search-icon"></div>
+<span class="search-text">Search Maps</span>
+</div>
+
+<!-- Direction card -->
+<div class="direction-card">
+<div class="direction-header">
+<div class="direction-dot"></div>
+<div class="direction-info">
+<div class="direction-dest">Shanghai Museum</div>
+<div class="direction-address">201 People's Square, Huangpu</div>
+</div>
+<div class="direction-duration">
+<div class="direction-time">12</div>
+<div class="direction-mins">mins</div>
+</div>
+</div>
+<div class="direction-steps">
+<div class="step-item">
+<span class="step-arrow">→</span>
+<div>
+<div class="step-text">Head west on Henan Middle Rd</div>
+<div class="step-distance">200 m</div>
+</div>
+</div>
+<div class="step-item">
+<span class="step-arrow">↱</span>
+<div>
+<div class="step-text">Turn left onto East Nanjing Rd</div>
+<div class="step-distance">650 m</div>
+</div>
+</div>
+<div class="step-item">
+<span class="step-arrow">→</span>
+<div>
+<div class="step-text">Arrive at Shanghai Museum</div>
+<div class="step-distance">Destination on right</div>
+</div>
+</div>
+</div>
+<button class="start-btn">Start</button>
+</div>
+
+<!-- Map controls -->
+<div class="map-controls">
+<div class="map-control-btn">+</div>
+<div class="map-control-btn">−</div>
+</div>
+<div class="location-btn-wrap">
+<div class="location-btn">
+<div class="loc-icon"></div>
+</div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+<div class="nav-item">
+<svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z" fill="#007aff"/></svg>
+<span class="nav-label" style="color:#007aff;">Search</span>
+</div>
+<div class="nav-item">
+<svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#888"/></svg>
+<span class="nav-label" style="color:#888;">Nearby</span>
+</div>
+<div class="nav-item">
+<svg width="24" height="24" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="#888"/><rect x="14" y="3" width="7" height="7" rx="1" fill="#888"/><rect x="3" y="14" width="7" height="7" rx="1" fill="#888"/><rect x="14" y="14" width="7" height="7" rx="1" fill="#888"/></svg>
+<span class="nav-label" style="color:#888;">Maps</span>
+</div>
+<div class="nav-item">
+<svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="#888"/></svg>
+<span class="nav-label" style="color:#888;">For You</span>
+</div>
+</div>
+
+<div class="home-indicator"></div>
+</div>
+</div>
+</body>
+</html>

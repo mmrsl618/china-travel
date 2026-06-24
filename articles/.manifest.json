@@ -20,7 +20,13 @@
   "essential-apps-for-traveling-in-china": {
     "title": "Essential Apps for Traveling in China",
     "section": "before-you-go",
-    "status": "zh_draft",
+    "status": "en_draft",
     "sub_category": "tools"
+  },
+  "high-speed-trains": {
+    "title": "How to Use China's High-Speed Trains",
+    "section": "transportation",
+    "status": "en_draft",
+    "sub_category": "trains"
   }
 }
