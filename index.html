@@ -57,18 +57,29 @@
   <div class="featured-header">
     <span class="tag">Featured</span>
   </div>
-  <div class="featured-grid">
-    <a href="guides/before-you-go.html#tab-visa" class="article-card">
-      <h3>China Visa Guide: Types, Application & Tips</h3>
-    </a>
-    <a href="guides/payment.html" class="article-card">
-      <h3>Alipay & WeChat Pay Setup for Travelers</h3>
-    </a>
-    <a href="guides/transportation.html" class="article-card">
-      <h3>China High-Speed Rail: What Foreigners Need to Know</h3>
-    </a>
+  <div class="featured-grid" id="featured-area">
+    <!-- JS dynamically fills from Worker API -->
   </div>
 </section>
+<script>
+(function(){
+  var FALLBACK_HTML='<a href="guides/before-you-go.html#tab-visa" class="article-card"><h3>China Visa Guide: Types, Application & Tips</h3></a><a href="guides/payment.html" class="article-card"><h3>Alipay & WeChat Pay Setup for Travelers</h3></a><a href="guides/transportation.html" class="article-card"><h3>China High-Speed Rail: What Foreigners Need to Know</h3></a>';
+  var el=document.getElementById("featured-area");
+  fetch("https://visitchinatips.com/api/top-pages")
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(!data||!data.length){el.innerHTML=FALLBACK_HTML;return;}
+      var top3=data.slice(0,3),html="";
+      top3.forEach(function(item){
+        var href=item.guide_url||(item.path.replace("/articles/","guides/").replace("/en.html",".html"));
+        var title=item.title||item.path.replace("/articles/","").replace("/en.html","").replace(/-/g," ").replace(/\b\w/g,function(c){return c.toUpperCase();});
+        html+='<a href="'+href+'" class="article-card"><h3>'+title+'</h3></a>';
+      });
+      el.innerHTML=html;
+    })
+    .catch(function(){el.innerHTML=FALLBACK_HTML;});
+})();
+</script>
 
 <footer>
   <p>© Visit China Tips. All guides are for informational purposes. <a href="#">Privacy Policy</a></p>

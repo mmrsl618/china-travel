@@ -34,7 +34,7 @@ def article_dir(fname):
     return os.path.join(ARTICLES_DIR, fname)
 
 def source_path(fname):
-    """中文稿路径"""
+    """zh.html 路径（历史初稿）"""
     return os.path.join(ARTICLES_DIR, fname, 'zh.html')
 
 def published_path(fname):
@@ -350,6 +350,21 @@ def git_push():
         return True, None
     except subprocess.TimeoutExpired:
         return False, 'Git push 超时，请检查网络后重试\n（如已配代理请确认代理软件已开启）'
+    except Exception as e:
+        return False, str(e)[:200]
+
+def update_kv_url_map():
+    """调用 gen_url_map.py 重新生成 URL 映射并上传 Cloudflare KV"""
+    script = os.path.join(SITE_DIR, 'gen_url_map.py')
+    if not os.path.exists(script):
+        return False, 'gen_url_map.py 不存在'
+    try:
+        r = subprocess.run(['python', script], cwd=SITE_DIR, capture_output=True, timeout=30)
+        if r.returncode != 0:
+            return False, r.stderr.decode('utf-8', errors='replace')[:300]
+        return True, None
+    except subprocess.TimeoutExpired:
+        return False, 'URL 映射更新超时'
     except Exception as e:
         return False, str(e)[:200]
 
@@ -674,7 +689,34 @@ new Chart(ctx, {{
 }});
 </script>'''
 
-    body = cards + table + chart_card
+    top_articles = '''<div class="card" style="margin-top:1rem;">
+<div class="card-title">🔥 热门文章排行（近7天）</div>
+<div id="top-articles" style="padding:0.5rem 1.2rem 1.2rem;color:#999;">加载中...</div>
+</div>
+<script>
+fetch("https://visitchinatips.com/api/top-pages")
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var el=document.getElementById("top-articles");
+    if(!data||!data.length){el.innerHTML='<p style="color:#aaa;">暂无数据，等文章有浏览量后自动显示</p>';return;}
+    var rows="";
+    data.forEach(function(item,i){
+      var path=item.path;
+      var name=item.title||path.replace("/articles/","").replace("/en.html","").replace(/-/g," ");
+      var rank=i==0?"🥇":i==1?"🥈":i==2?"🥉":(i+1)+".";
+      var href=item.guide_url||path.replace("/articles/","guides/").replace("/en.html",".html");
+      rows+='<tr style="border-bottom:1px solid #eee;">'+
+        '<td style="padding:0.5rem;width:2.5rem;">'+rank+'</td>'+
+        '<td style="padding:0.5rem;text-transform:capitalize;"><a href="'+href+'" target="_blank">'+name+'</a></td>'+
+        '<td style="padding:0.5rem;text-align:right;color:#1a1a2e;font-weight:600;">'+item.count+'</td></tr>';
+    });
+    el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">'+rows+'</table>';
+  })
+  .catch(function(e){
+    document.getElementById("top-articles").innerHTML='<p style="color:#aaa;">Worker API 请求失败，请检查 Worker 是否在线</p>';
+  });
+</script>'''
+    body = cards + table + chart_card + top_articles
     return render_page('流量统计', body, 'stats')
 
 # =====================================================================
@@ -1167,6 +1209,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                     ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
                     if not ok_gl:
                         print(f'[complete] ⚠️ guide 列表更新失败: {err_gl}')
+                # 更新 Cloudflare KV URL 映射（供 Worker API 使用）
+                ok_map, err_map = update_kv_url_map()
+                if not ok_map:
+                    print(f'[kv] ⚠️ URL 映射更新失败: {err_map}')
                 self.redirect_msg('/admin/publish', 'ok', f'「{title}」已上站，成功上线到网站')
             else:
                 # push 失败，manifest 不动（保持 en_draft），文章不消失
