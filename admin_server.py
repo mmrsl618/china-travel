@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v4.0
- - 不写死代理，由系统 git 自行读取用户配置（git config / 环境变量 / TUN）
- - git add/commit 返回码检查，"nothing to commit" 不报错
- - push 失败时区分网络问题和代码问题，分别提示
+"""admin_server.py — 管理后台 v4.1
+ - v4.1: 修复 update_guide_listing() tab查找逻辑；预览链接指向线上域名；导航加文章数量；文字"已上线"→"已上站"
+ - v4.0: 适配文件夹结构；Git proxy 清掉，靠Windows系统代理
 
 端口 8082 | ThreadingTCPServer
 
 导航栏三栏：
   📫 待审草稿 /admin/draft   — zh_draft/draft → 编辑 + 通过(套壳生成 en.html → en_draft，不 push)
   📪 待上站  /admin/publish — en_draft → 预览 + 编辑(提示撤回) + 上站(git push → online)
-  ✅ 已上线  /admin/done     — online → 编辑/重新发布/删除
+  ✅ 已上站  /admin/done     — online → 编辑/重新发布/删除
 
 状态流转：zh_draft → [通过] 套壳 → en_draft → [上站] git push → online
                     ↑ 撤回草稿，改完重新通过
@@ -66,7 +65,7 @@ SUBCAT_MAP = {
         ('flights', 'Flights'),
         ('local', 'Local'),
     ],
-    'stay': [],
+    'stay': [('accommodations', 'Accommodations')],
     'explore': [
         ('cities', 'City Guides'),
         ('itineraries', 'Itineraries'),
@@ -161,6 +160,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
     guide_path = f'guides/{section}.html'
     content, err = read_file(guide_path)
     if not content:
+        print(f'[update_guide_listing] ❌ 找不到 {guide_path}: {err}')
         return False, f'找不到 {guide_path}: {err}'
 
     link_html = f'<a href="../articles/{fname}/en.html" class="article-link">{html_escape(title)}</a>'
@@ -173,6 +173,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
             content
         )
         if new_content == content:
+            print(f'[update_guide_listing] ❌ 在 {guide_path} 中未找到「{title}」的链接')
             return False, f'在 {guide_path} 中未找到「{title}」的链接'
         # 清理空 article-list
         new_content = re.sub(
@@ -182,6 +183,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
         )
         ok, err = write_file(guide_path, new_content)
         if not ok:
+            print(f'[update_guide_listing] ❌ 写入 {guide_path} 失败: {err}')
             return False, f'写入 {guide_path} 失败: {err}'
         return True, None
 
@@ -199,6 +201,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
         if tab_start >= 0:
             break
     if tab_start < 0:
+        print(f'[update_guide_listing] ❌ 在 {guide_path} 中未找到 #{tab_id} div')
         return False, f'在 {guide_path} 中未找到 #{tab_id} div'
 
     # 跳过 opening tag
@@ -216,6 +219,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
         # 已有 article-list，在末尾追加新链接
         al_close = content.find('</div>', al_pos)
         if al_close < 0:
+            print(f'[update_guide_listing] ❌ 在 {guide_path} 中 article-list 缺少闭合标签')
             return False, f'在 {guide_path} 中 article-list 缺少闭合标签'
         new_content = (content[:al_close] +
                        '\n    ' + link_html +
@@ -225,16 +229,19 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
         # 找 tab-content 的闭合 </div>
         tab_close = content.find('</div>', tag_end)
         if tab_close < 0:
+            print(f'[update_guide_listing] ❌ 在 {guide_path} 中 #{tab_id} 缺少闭合标签')
             return False, f'在 {guide_path} 中 #{tab_id} 缺少闭合标签'
         new_content = (content[:tab_close] +
                        '\n  <div class="article-list">\n    ' + link_html + '\n  </div>' +
                        content[tab_close:])
 
     if new_content == content:
+        print(f'[update_guide_listing] ❌ 修改 {guide_path} 后无变化')
         return False, f'修改 {guide_path} 后无变化'
 
     ok, err = write_file(guide_path, new_content)
     if not ok:
+        print(f'[update_guide_listing] ❌ 写入 {guide_path} 失败: {err}')
         return False, f'写入 {guide_path} 失败: {err}'
     return True, None
 
@@ -268,7 +275,7 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
     section_url = f'../../guides/{section}.html'
     sub_label = ''
     if sub_category:
-        for subs in SUBCAT_MAP.values():
+        for subs in SUBCAT_MAP.get(section, []):
             for k, lbl in subs:
                 if k == sub_category:
                     sub_label = lbl
@@ -442,16 +449,26 @@ def _section_nav_html(section_key, section_label, current_page):
     html += f'{sec_indent}</div>\n'
     return html
 
+def _count_articles(manifest, status_filter):
+    try:
+        return sum(1 for info in manifest.values() if status_filter(info.get('status', '')))
+    except:
+        return '?'
+
 def sidebar_nav(current_page):
     """生成左侧导航 — v4.0 三栏"""
+    manifest = get_manifest()
+    draft_cnt = _count_articles(manifest, lambda s: s in ('zh_draft', 'draft'))
+    pub_cnt   = _count_articles(manifest, lambda s: s == 'en_draft')
+    done_cnt  = _count_articles(manifest, lambda s: s == 'online')
     draft_active = ' active' if current_page == 'draft' else ''
     publish_active = ' active' if current_page == 'publish' else ''
-    html = f'<a class="nav-item{draft_active}" href="/admin/draft">📫 待审草稿</a>'
-    html += f'<a class="nav-item{publish_active}" href="/admin/publish">📪 待上站</a>'
-    # 已上线（汉堡式导航，5个板块）
+    html = f'<a class="nav-item{draft_active}" href="/admin/draft">📫 待审草稿({draft_cnt})</a>'
+    html += f'<a class="nav-item{publish_active}" href="/admin/publish">📪 待上站({pub_cnt})</a>'
+    # 已上站（汉堡式导航，5个板块）
     is_online = current_page.startswith('done')
     html += f'''<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">
-✅ 已上线 <span class="arrow">▸</span></div>'''
+✅ 已上站({done_cnt}) <span class="arrow">▸</span></div>'''
     ch = ''.join(
         _section_nav_html(k, v, current_page)
         for k, v in GUIDE_MAP)
@@ -623,7 +640,7 @@ def render_publish_page(msg=None):
 </div>''', 'publish')
 
 def render_done_page(section_key, sub='', msg=None):
-    """已上线：按板块列出已发布的文章，可选按子分类过滤"""
+    """已上站：按板块列出已发布的文章，可选按子分类过滤"""
     manifest = get_manifest()
     label = GUIDE_SECTIONS.get(section_key, section_key)
     rows = ''
@@ -643,7 +660,7 @@ def render_done_page(section_key, sub='', msg=None):
             continue
         count += 1
         title = info.get('title', fname)
-        preview_url = f'/articles/{fname}/en.html'
+        preview_url = f'https://visitchinatips.com/articles/{fname}/en.html'
         edit_from = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
         edit_url = f'/admin/edit?path={fname}&from={edit_from}'
         rows += f'''<div class="row">
@@ -672,7 +689,7 @@ def render_done_page(section_key, sub='', msg=None):
             msg_html = f'<div class="msg msg-success">✅ {msg[3:]}</div>'
         elif msg.startswith('err:'):
             msg_html = f'<div class="msg msg-error">❌ {msg[3:]}</div>'
-    title_parts = ['已上线', label]
+    title_parts = ['已上站', label]
     if sub_label:
         title_parts.append(sub_label)
     page_title = ' · '.join(title_parts)
@@ -680,7 +697,7 @@ def render_done_page(section_key, sub='', msg=None):
 
     return render_page(page_title,
         f'''<div class="card">
-<div class="card-title">✅ 已上线 · {label}{" > " + sub_label if sub_label else ""}（共 {count} 篇）</div>
+<div class="card-title">✅ 已上站 · {label}{" > " + sub_label if sub_label else ""}（共 {count} 篇）</div>
 {msg_html}
 {rows}
 </div>''', current_page)
@@ -772,7 +789,7 @@ secSel.addEventListener('change',function(){
         back_url = f'/admin/done/{section_from}'
         if sub_from:
             back_url += f'?sub={sub_from}'
-        back_label = '返回已上线'
+        back_label = '返回已上站'
     else:
         back_url = '/admin/draft'
         back_label = '返回草稿管理'
@@ -860,7 +877,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.send_html(render_publish_page(msg))
             return
 
-        # 已上线板块
+        # 已上站板块
         m = re.match(r'/admin/done/([\w-]+)/?$', path)
         if m:
             section = m.group(1)
@@ -983,7 +1000,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 set_article_manifest(fname, title, section, 'online', sub_category)
                 # 自动更新 guide 列表页
                 if sub_category:
-                    update_guide_listing(section, sub_category, fname, title)
+                    ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
+                    if not ok_gl:
+                        print(f'[complete] ⚠️ guide 列表更新失败: {err_gl}')
                 self.redirect_msg('/admin/publish', 'ok', f'「{title}」已上站，成功上线到网站')
             else:
                 # push 失败，manifest 不动（保持 en_draft），文章不消失
@@ -1008,7 +1027,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.redirect_msg('/admin/draft', 'ok', f'「{title}」已撤回草稿，可重新编辑')
             return
 
-        # ---- 重新发布（已上线文章） ----
+        # ---- 重新发布（已上站文章） ----
         if path == '/admin/republish':
             fname = data.get('path', [None])[0]
             section = data.get('section', [None])[0] or 'before-you-go'
@@ -1045,7 +1064,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
             # 自动更新 guide 列表页（确保链接存在）
             if sub_category:
-                update_guide_listing(section, sub_category, fname, title)
+                ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
+                if not ok_gl:
+                    print(f'[republish] ⚠️ guide 列表更新失败: {err_gl}')
 
             if git_ok:
                 self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已重新发布到线上')
@@ -1068,7 +1089,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
             # 先从 guide 列表页移除链接
             if sub_category:
-                update_guide_listing(section, sub_category, fname, title, remove=True)
+                ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title, remove=True)
+                if not ok_gl:
+                    print(f'[delete] ⚠️ guide 列表移除链接失败: {err_gl}')
 
             # 删除整个文章文件夹
             import shutil
