@@ -698,7 +698,7 @@ fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
       var href=item.guide_url||path.replace("/articles/","guides/").replace("/en.html",".html");
       rows+='<tr style="border-bottom:1px solid #eee;">'+
         '<td style="padding:0.5rem;width:2.5rem;">'+rank+'</td>'+
-        '<td style="padding:0.5rem;text-transform:capitalize;"><a href="'+href+'" target="_blank">'+name+'</a></td>'+
+        '<td style="padding:0.5rem;"><a href="'+href+'" target="_blank">'+name+'</a></td>'+
         '<td style="padding:0.5rem;text-align:right;color:#1a1a2e;font-weight:600;">'+item.count+'</td></tr>';
     });
     el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">'+rows+'</table>';
