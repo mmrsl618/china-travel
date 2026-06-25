@@ -65,7 +65,7 @@
 (function(){
   var FALLBACK_HTML='<a href="guides/before-you-go.html#tab-visa" class="article-card"><h3>China Visa Guide: Types, Application & Tips</h3></a><a href="guides/payment.html" class="article-card"><h3>Alipay & WeChat Pay Setup for Travelers</h3></a><a href="guides/transportation.html" class="article-card"><h3>China High-Speed Rail: What Foreigners Need to Know</h3></a>';
   var el=document.getElementById("featured-area");
-  fetch("https://visitchinatips.com/api/top-pages")
+  fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
     .then(function(r){return r.json();})
     .then(function(data){
       if(!data||!data.length){el.innerHTML=FALLBACK_HTML;return;}

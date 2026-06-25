@@ -694,7 +694,7 @@ new Chart(ctx, {{
 <div id="top-articles" style="padding:0.5rem 1.2rem 1.2rem;color:#999;">加载中...</div>
 </div>
 <script>
-fetch("https://visitchinatips.com/api/top-pages")
+fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
   .then(function(r){return r.json();})
   .then(function(data){
     var el=document.getElementById("top-articles");
