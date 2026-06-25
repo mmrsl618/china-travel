@@ -606,18 +606,12 @@ def render_stats_page():
     # 今日数据
     today = daily_data[0]
     today_pageviews = today['sum']['pageViews']
-    today_bytes = today['sum']['bytes']
-    today_mb = round(today_bytes / 1048576, 2)
 
     # 今日概览卡片
     cards = f'''<div style="display:flex;gap:1rem;margin-bottom:1rem;">
 <div class="card" style="flex:1;text-align:center;padding:1.2rem;">
   <div style="font-size:0.8rem;color:#999;">今日页面浏览</div>
   <div style="font-size:2rem;font-weight:700;color:#1a1a2e;">{today_pageviews:,}</div>
-</div>
-<div class="card" style="flex:1;text-align:center;padding:1.2rem;">
-  <div style="font-size:0.8rem;color:#999;">今日带宽</div>
-  <div style="font-size:2rem;font-weight:700;color:#1a1a2e;">{today_mb} MB</div>
 </div>
 </div>'''
 
@@ -630,11 +624,9 @@ def render_stats_page():
     for day in daily_data:
         date = day['dimensions']['date']
         pvs = day['sum']['pageViews']
-        mb = round(day['sum']['bytes'] / 1048576, 2)
         rows += f'''<tr>
 <td>{date}</td>
 <td style="text-align:right;">{pvs:,}</td>
-<td style="text-align:right;">{mb} MB</td>
 </tr>'''
 
     table = f'''<div class="card">
@@ -644,7 +636,6 @@ def render_stats_page():
 <thead><tr style="border-bottom:2px solid #1a1a2e;">
 <th style="text-align:left;padding:0.5rem;">日期</th>
 <th style="text-align:right;padding:0.5rem;">页面浏览</th>
-<th style="text-align:right;padding:0.5rem;">带宽</th>
 </tr></thead>
 <tbody>{rows}</tbody>
 </table>
@@ -1277,6 +1268,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
                 if not ok_gl:
                     print(f'[republish] ⚠️ guide 列表更新失败: {err_gl}')
+            # 更新 KV URL 映射
+            ok_map, err_map = update_kv_url_map()
+            if not ok_map:
+                print(f'[republish] ⚠️ URL 映射更新失败: {err_map}')
 
             if git_ok:
                 self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已重新发布到线上')
@@ -1312,6 +1307,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             git_ok, git_err = git_push()
 
             if git_ok:
+                # 更新 KV URL 映射（删除已移除的文章）
+                ok_map, err_map = update_kv_url_map()
+                if not ok_map:
+                    print(f'[delete] ⚠️ URL 映射更新失败: {err_map}')
                 self.redirect_msg(f'/admin/done/{section}', 'ok', f'「{title}」已删除')
             else:
                 self.redirect_msg(f'/admin/done/{section}', 'err', f'删除但同步失败:{git_err}')

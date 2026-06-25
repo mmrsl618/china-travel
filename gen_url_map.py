@@ -27,7 +27,10 @@ def main():
             continue
         section = info.get('section', 'before-you-go')
         guide_file = SECTION_TO_GUIDE.get(section, 'before-you-go')
-        url_map[key] = f'guides/{guide_file}.html#tab-{key}'
+        url_map[key] = {
+            'guide_url': f'guides/{guide_file}.html#tab-{key}',
+            'title': info.get('title', key.replace('-', ' ').title())
+        }
 
     # Write local file
     output = f'{SITE_DIR}/url_map.json'
