@@ -13,9 +13,10 @@
 状态流转：zh_draft → [通过] 套壳 → en_draft → [上站] git push → online
                     ↑ 撤回草稿，改完重新通过
 """
-import os, sys, re, json, urllib.parse
+import os, sys, re, json, urllib.parse, urllib.request
 import http.server, socketserver
 import subprocess
+from datetime import datetime, timedelta
 
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 sys.stdout.reconfigure(encoding='utf-8')
@@ -487,6 +488,8 @@ function toggleSubcat(id){
   c.classList.toggle('show');
 }
 </script>'''
+    stats_active = ' active' if current_page == 'stats' else ''
+    html += f'<a class="nav-item{stats_active}" href="/admin/stats">📊 流量统计</a>'
     return html + js
 
 def render_page(title, body_html, current_page='draft', wide=False):
@@ -517,6 +520,162 @@ def _search_bar(input_id):
        oninput="var q=this.value.toLowerCase();var rows=this.parentElement.parentElement.querySelectorAll('.row');
 rows.forEach(function(r){{r.style.display=(!q||r.getAttribute('data-keyword')||'').indexOf(q)>=0?'':'none'}});">
 </div>'''
+
+# =====================================================================
+#  配置（admin_config.json，不提交到 git）
+# =====================================================================
+def _load_config():
+    """从 admin_config.json 读取凭据，文件不存在时返回 None"""
+    cfg_path = os.path.join(os.path.dirname(__file__), 'admin_config.json')
+    try:
+        with open(cfg_path, encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+CFG = _load_config()
+
+# =====================================================================
+#  流量统计
+# =====================================================================
+def _fetch_cloudflare_stats():
+    """请求 Cloudflare GraphQL API，返回每日数据列表或 None"""
+    if not CFG:
+        return None
+    url = 'https://api.cloudflare.com/client/v4/graphql'
+    token = CFG.get('cloudflare_api_token', '')
+    zone_id = CFG.get('cloudflare_zone_id', '')
+    if not token or not zone_id:
+        return None
+    headers = {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+    }
+    seven_days_ago = (datetime.utcnow() - timedelta(days=7)).strftime('%Y-%m-%d')
+    query = '''query {
+  viewer {
+    zones(filter: { zoneTag: "''' + zone_id + '''" }) {
+      httpRequests1dGroups(limit: 7, filter: { date_gt: "''' + seven_days_ago + '''" }, orderBy: [date_DESC]) {
+        dimensions { date }
+        sum { requests pageViews bytes }
+      }
+    }
+  }
+}'''
+    payload = json.dumps({'query': query}).encode('utf-8')
+    req = urllib.request.Request(url, data=payload, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            zones = data.get('data', {}).get('viewer', {}).get('zones', [])
+            if not zones:
+                return None
+            return zones[0].get('httpRequests1dGroups', [])
+    except Exception as e:
+        print(f'[stats] Cloudflare API 请求失败: {e}')
+        return None
+
+def render_stats_page():
+    """流量统计页"""
+    daily_data = _fetch_cloudflare_stats()
+
+    if not daily_data:
+        body = '''<div class="card">
+<div class="card-title">📊 流量统计</div>
+<div class="empty" style="padding:3rem 1rem;">
+  <p style="font-size:1.2rem;margin-bottom:0.5rem;">暂无数据</p>
+  <p style="font-size:0.85rem;color:#aaa;">Cloudflare API 请求失败或返回为空，请稍后重试</p>
+</div></div>'''
+        return render_page('流量统计', body, 'stats')
+
+    # 今日数据
+    today = daily_data[0]
+    today_pageviews = today['sum']['pageViews']
+    today_bytes = today['sum']['bytes']
+    today_mb = round(today_bytes / 1048576, 2)
+
+    # 今日概览卡片
+    cards = f'''<div style="display:flex;gap:1rem;margin-bottom:1rem;">
+<div class="card" style="flex:1;text-align:center;padding:1.2rem;">
+  <div style="font-size:0.8rem;color:#999;">今日页面浏览</div>
+  <div style="font-size:2rem;font-weight:700;color:#1a1a2e;">{today_pageviews:,}</div>
+</div>
+<div class="card" style="flex:1;text-align:center;padding:1.2rem;">
+  <div style="font-size:0.8rem;color:#999;">今日带宽</div>
+  <div style="font-size:2rem;font-weight:700;color:#1a1a2e;">{today_mb} MB</div>
+</div>
+</div>'''
+
+    # 折线图数据
+    chart_dates_json = json.dumps([d['dimensions']['date'] for d in reversed(daily_data)])
+    chart_pv_json = json.dumps([d['sum']['pageViews'] for d in reversed(daily_data)])
+
+    # 每日明细表
+    rows = ''
+    for day in daily_data:
+        date = day['dimensions']['date']
+        pvs = day['sum']['pageViews']
+        mb = round(day['sum']['bytes'] / 1048576, 2)
+        rows += f'''<tr>
+<td>{date}</td>
+<td style="text-align:right;">{pvs:,}</td>
+<td style="text-align:right;">{mb} MB</td>
+</tr>'''
+
+    table = f'''<div class="card">
+<div class="card-title">📋 每日明细</div>
+<div style="overflow-x:auto;padding:0 1.2rem 1.2rem;">
+<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+<thead><tr style="border-bottom:2px solid #1a1a2e;">
+<th style="text-align:left;padding:0.5rem;">日期</th>
+<th style="text-align:right;padding:0.5rem;">页面浏览</th>
+<th style="text-align:right;padding:0.5rem;">带宽</th>
+</tr></thead>
+<tbody>{rows}</tbody>
+</table>
+</div></div>'''
+
+    # 折线图
+    chart_card = f'''<div class="card">
+<div class="card-title">📈 近7天趋势</div>
+<div style="padding:0.5rem 1.2rem 1.2rem;">
+<canvas id="statsChart" height="220" style="width:100%;max-height:260px;"></canvas>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+var ctx = document.getElementById('statsChart').getContext('2d');
+new Chart(ctx, {{
+  type: 'line',
+  data: {{
+    labels: {chart_dates_json},
+    datasets: [{{
+      label: '页面浏览',
+      data: {chart_pv_json},
+      borderColor: '#DE2910',
+      backgroundColor: 'rgba(222,41,16,0.06)',
+      tension: 0.3,
+      fill: true,
+      pointRadius: 4,
+      pointBackgroundColor: '#DE2910',
+    }}]
+  }},
+  options: {{
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {{
+      legend: {{ display: false }}
+    }},
+    scales: {{
+      x: {{ grid: {{ display: false }} }},
+      y: {{ beginAtZero: true, grid: {{ color: 'rgba(0,0,0,0.05)' }} }}
+    }}
+  }}
+}});
+</script>'''
+
+    body = cards + table + chart_card
+    return render_page('流量统计', body, 'stats')
 
 # =====================================================================
 #  页面渲染函数
@@ -902,6 +1061,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_redirect('/admin/draft')
                 return
             self.send_html(render_edit_page(fname, return_to, msg_tuple))
+            return
+
+        # 流量统计
+        if path == '/admin/stats':
+            self.send_html(render_stats_page())
             return
 
         # 静态文件
