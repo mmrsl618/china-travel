@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v4.1
+"""admin_server.py — 管理后台 v4.4
+ - v4.4: 代码整理；import shutil 提至顶层；修正 [go-live] 日志标签；清除重复赋值
+ - v4.3: 流量统计页（Cloudflare API）；Featured 动态化；热门排行（Worker API）；URL 映射集成
+ - v4.2: 待上站（publish）/ 撤回草稿 / 重新发布 / 删除 功能完善
  - v4.1: 修复 update_guide_listing() tab查找逻辑；预览链接指向线上域名；导航加文章数量；文字"已上线"→"已上站"
  - v4.0: 适配文件夹结构；Git proxy 清掉，靠Windows系统代理
 
@@ -13,7 +16,7 @@
 状态流转：zh_draft → [通过] 套壳 → en_draft → [上站] git push → online
                     ↑ 撤回草稿，改完重新通过
 """
-import os, sys, re, json, urllib.parse, urllib.request
+import os, sys, re, json, shutil, urllib.parse, urllib.request
 import http.server, socketserver
 import subprocess
 from datetime import datetime, timedelta
@@ -1199,11 +1202,11 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 if sub_category:
                     ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
                     if not ok_gl:
-                        print(f'[complete] ⚠️ guide 列表更新失败: {err_gl}')
+                        print(f'[go-live] ⚠️ guide 列表更新失败: {err_gl}')
                 # 更新 Cloudflare KV URL 映射（供 Worker API 使用）
                 ok_map, err_map = update_kv_url_map()
                 if not ok_map:
-                    print(f'[kv] ⚠️ URL 映射更新失败: {err_map}')
+                    print(f'[go-live] ⚠️ URL 映射更新失败: {err_map}')
                 self.redirect_msg('/admin/publish', 'ok', f'「{title}」已上站，成功上线到网站')
             else:
                 # push 失败，manifest 不动（保持 en_draft），文章不消失
@@ -1290,7 +1293,6 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             title = info.get('title', fname)
             section = info.get('section', 'before-you-go')
             sub_category = info.get('sub_category', '')
-            title = info.get('title', fname)
 
             # 先从 guide 列表页移除链接
             if sub_category:
@@ -1299,7 +1301,6 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                     print(f'[delete] ⚠️ guide 列表移除链接失败: {err_gl}')
 
             # 删除整个文章文件夹
-            import shutil
             ad = article_dir(fname)
             if os.path.exists(ad):
                 shutil.rmtree(ad)
@@ -1322,7 +1323,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 #  启动
 # =====================================================================
 if __name__ == '__main__':
-    print(f'管理后台 v4.0 — http://localhost:{PORT}/admin')
+    print(f'管理后台 v4.4 — http://localhost:{PORT}/admin')
     with socketserver.ThreadingTCPServer(('', PORT), AdminHandler) as httpd:
         try:
             httpd.serve_forever()
