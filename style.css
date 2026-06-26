@@ -110,8 +110,14 @@ header {
 /* ========== Page Header ========== */
 .page-header {
   background: #fff;
-  padding: 2.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 260px;
+  padding: 0 2rem;
   text-align: center;
+  border-bottom: 1px solid #e8e8e8;
 }
 .page-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
 .page-header p { color: var(--text-light); font-size: 1rem; }
@@ -120,8 +126,13 @@ header {
 .hero {
   background: linear-gradient(135deg, var(--dark) 0%, #16213e 100%);
   color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 260px;
+  padding: 0 2rem;
   text-align: center;
-  padding: 4rem 1.5rem;
 }
 .hero h1 {
   font-size: 2.5rem;
@@ -210,10 +221,13 @@ header {
 
 /* ========== Sub-category Tabs ========== */
 .subcat-tabs {
+  max-width: 700px;
+  margin: 0 auto;
   padding: 0 2rem;
 }
 .tab-nav {
   display: flex;
+  justify-content: flex-start;
   gap: 0;
   border-bottom: 2px solid #e0e0e0;
   overflow-x: auto;
@@ -255,7 +269,7 @@ header {
 
 /* ========== Content Area (grey background) ========== */
 .content-area {
-  background: var(--gray);
+  background: #fff;
   background-clip: content-box;
   flex: 1;
   padding: 0 2rem;
@@ -459,6 +473,21 @@ footer a { color: var(--gold); text-decoration: none; }
 }
 .article-link:hover {
   color: #035d83;
+}
+/* Guide listing pages — center article list (before-you-go, getting-around) */
+.guide-list-wrapper {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+.guide-list-wrapper .article-link {
+  display: block;
+  padding: 0.65rem 1rem;
+  background: #f8f8f8;
+  border-radius: 6px;
+}
+.guide-list-wrapper .article-link:hover {
+  background: #eef2f6;
 }
 /* Article detail pages — body class */
 body.article-page {
