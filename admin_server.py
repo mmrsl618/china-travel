@@ -9,12 +9,11 @@
 端口 8082 | ThreadingTCPServer
 
 导航栏三栏：
-  📫 待审草稿 /admin/draft   — zh_draft/draft → 编辑 + 通过(套壳生成 en.html → en_draft，不 push)
-  📪 待上站  /admin/publish — en_draft → 预览 + 编辑(提示撤回) + 上站(git push → online)
-  ✅ 已上站  /admin/done     — online → 编辑/重新发布/删除
+  📫 待审草稿 /admin/draft   — 英文源稿 → 编辑 + 通过(套壳生成 en.html，不 push)
+  📪 待上站  /admin/publish — 已套壳待发布 → 预览 + 编辑(提示撤回) + 上站(git push)
+  ✅ 已上站  /admin/done     — 已上线 → 编辑/重新发布/删除
 
-状态流转：zh_draft → [通过] 套壳 → en_draft → [上站] git push → online
-                    ↑ 撤回草稿，改完重新通过
+状态流转：待审稿 → [通过] 套壳 → 待上站 → [上站] git push → 已上线
 """
 import os, sys, re, json, shutil, urllib.parse, urllib.request
 import http.server, socketserver
