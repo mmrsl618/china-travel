@@ -341,11 +341,11 @@ footer a { color: var(--gold); text-decoration: none; }
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
   .hero {
-    min-height: 180px;
+    min-height: 150px;
     padding: 0 1.5rem;
   }
   .page-header {
-    min-height: 180px;
+    min-height: 150px;
     padding: 0 1.5rem;
   }
   .page-header h1 { font-size: 1.4rem; }
@@ -364,8 +364,8 @@ footer a { color: var(--gold); text-decoration: none; }
 
   /* 首页间距压紧 */
   .quick-access {
-    margin-top: 1.5rem;
-    padding: 0 1.25rem 1.5rem;
+    margin-top: 1rem;
+    padding: 0 1.25rem 0.5rem;
   }
 
   .bottom-nav { display: block; }
@@ -457,7 +457,7 @@ footer a { color: var(--gold); text-decoration: none; }
 }
 
 @media (max-width: 640px) {
-  .quick-card { padding: 1.25rem; }
+  .quick-card { padding: 0.8rem; }
 }
 
 @media (max-width: 400px) {
