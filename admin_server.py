@@ -45,9 +45,7 @@ def published_path(fname):
 
 GUIDE_MAP = [
     ('before-you-go', 'Before You Go'),
-    ('payment', 'Payment'),
-    ('transportation', 'Transportation'),
-    ('stay', 'Where to Stay'),
+    ('getting-around', 'Getting Around'),
     ('explore', 'Explore China'),
 ]
 GUIDE_SECTIONS = {k: v for k, v in GUIDE_MAP}
@@ -55,20 +53,11 @@ GUIDE_SECTIONS = {k: v for k, v in GUIDE_MAP}
 # 二级导航（子分类）映射
 SUBCAT_MAP = {
     'before-you-go': [
-        ('visa', 'Visa Policies'),
-        ('arrival', 'Arrival Guide'),
-        ('tools', 'Essential Tools'),
+        # 不再分子分类，所有文章列表展示。保留空列表以便后台兼容。
     ],
-    'payment': [
-        ('methods', 'Payment Methods'),
-        ('tips', 'Practical Tips'),
+    'getting-around': [
+        # 交通+住宿合并，不分子分类。
     ],
-    'transportation': [
-        ('trains', 'Trains'),
-        ('flights', 'Flights'),
-        ('local', 'Local'),
-    ],
-    'stay': [('accommodations', 'Accommodations')],
     'explore': [
         ('cities', 'City Guides'),
         ('itineraries', 'Itineraries'),
@@ -260,9 +249,7 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
         return content
     nav_map = [
         ('before-you-go', 'Before You Go', '../../guides/before-you-go.html'),
-        ('payment', 'Payment', '../../guides/payment.html'),
-        ('transportation', 'Transportation', '../../guides/transportation.html'),
-        ('stay', 'Where to Stay', '../../guides/stay.html'),
+        ('getting-around', 'Getting Around', '../../guides/getting-around.html'),
         ('explore', 'Explore China', '../../guides/explore.html'),
     ]
     nav_html = ''

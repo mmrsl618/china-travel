@@ -8,3 +8,4 @@ admin_server_v*.py
 _backup_*/
 admin_config.json
 url_map.json
+".wrangler/"  

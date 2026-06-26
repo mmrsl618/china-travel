@@ -18,9 +18,7 @@
     <nav class="cat-nav-header">
       <span class="crumb current">Home</span>
       <a href="guides/before-you-go.html">Before You Go</a>
-      <a href="guides/payment.html">Payment</a>
-      <a href="guides/transportation.html">Transportation</a>
-      <a href="guides/stay.html">Where to Stay</a>
+      <a href="guides/getting-around.html">Getting Around</a>
       <a href="guides/explore.html">Explore China</a>
     </nav>
     <div class="search-container">
@@ -38,13 +36,13 @@
 <!-- Quick Access: 2 highlighted cards -->
 <section class="quick-access">
   <div class="quick-grid">
-    <a href="guides/before-you-go.html#tab-visa" class="quick-card visa-check">
+    <a href="guides/before-you-go.html" class="quick-card visa-check">
       <div class="qa-icon">🔍</div>
       <h3>Do I Need a Visa?</h3>
       <p>Check visa-free policies, 144-hour transit visa, and application steps</p>
       
     </a>
-    <a href="guides/payment.html" class="quick-card payment">
+    <a href="guides/before-you-go.html" class="quick-card payment">
       <div class="qa-icon">💳</div>
       <h3>How to Pay in China</h3>
       <p>Alipay, WeChat Pay, cash tips, and card usage —how to pay in China</p>
@@ -63,7 +61,7 @@
 </section>
 <script>
 (function(){
-  var FALLBACK_HTML='<a href="guides/before-you-go.html#tab-visa" class="article-card"><h3>China Visa Guide: Types, Application & Tips</h3></a><a href="guides/payment.html" class="article-card"><h3>Alipay & WeChat Pay Setup for Travelers</h3></a><a href="guides/transportation.html" class="article-card"><h3>China High-Speed Rail: What Foreigners Need to Know</h3></a>';
+  var FALLBACK_HTML='<a href="guides/before-you-go.html" class="article-card"><h3>China Visa Guide: Types, Application & Tips</h3></a><a href="guides/before-you-go.html" class="article-card"><h3>Alipay & WeChat Pay Setup for Travelers</h3></a><a href="guides/getting-around.html" class="article-card"><h3>China High-Speed Rail: What Foreigners Need to Know</h3></a>';
   var el=document.getElementById("featured-area");
   fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
     .then(function(r){return r.json();})
@@ -89,10 +87,8 @@
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
     <span class="nav-item current"><span class="nav-icon">🏠</span>Home</span>
-    <a href="guides/before-you-go.html"><span class="nav-icon">🧳</span>Guide</a>
-    <a href="guides/payment.html"><span class="nav-icon">💰</span>Pay</a>
-    <a href="guides/transportation.html"><span class="nav-icon">🚗</span>Go</a>
-    <a href="guides/stay.html"><span class="nav-icon">🏨</span>Stay</a>
+    <a href="guides/before-you-go.html"><span class="nav-icon">🧳</span>Prepare</a>
+    <a href="guides/getting-around.html"><span class="nav-icon">🚗</span>Travel</a>
     <a href="guides/explore.html"><span class="nav-icon">🗺️</span>Explore</a>
   </div>
 </nav>

@@ -11,9 +11,7 @@ WRANGLER = r'D:\Qwenpaw\nodejs\wrangler.cmd'
 
 SECTION_TO_GUIDE = {
     'before-you-go': 'before-you-go',
-    'payment': 'payment',
-    'transportation': 'transportation',
-    'stay': 'stay',
+    'getting-around': 'getting-around',
     'explore': 'explore',
 }
 
@@ -27,8 +25,13 @@ def main():
             continue
         section = info.get('section', 'before-you-go')
         guide_file = SECTION_TO_GUIDE.get(section, 'before-you-go')
+        subcat = info.get('sub_category', '')
+        if section == 'explore' and subcat:
+            tab = f'#tab-{subcat}'
+        else:
+            tab = ''
         url_map[key] = {
-            'guide_url': f'guides/{guide_file}.html#tab-{key}',
+            'guide_url': f'guides/{guide_file}.html{tab}',
             'title': info.get('title', key.replace('-', ' ').title())
         }
 
