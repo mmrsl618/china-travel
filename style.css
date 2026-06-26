@@ -350,6 +350,7 @@ footer a { color: var(--gold); text-decoration: none; }
   }
   .page-header h1 { font-size: 1.4rem; }
   .page-header p { font-size: 0.875rem; }
+  .guide-list-wrapper { padding: 0 !important; }
   .hero h1 { font-size: 1.8rem; }
   .hero h1 .hl-line { display: block; }
   .featured-grid { grid-template-columns: 1fr; gap: 0.75rem; }
