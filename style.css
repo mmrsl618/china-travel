@@ -340,22 +340,19 @@ footer a { color: var(--gold); text-decoration: none; }
 
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
-  .hero {
-    min-height: 150px;
-    padding: 0 1.5rem;
-  }
-  .page-header {
-    min-height: 150px;
-    padding: 0 1.5rem;
+  .hero, .page-header {
+    min-height: 160px;
+    justify-content: flex-start;
+    padding-top: 1.2rem;
   }
   .page-header h1 { font-size: 1.4rem; }
   .page-header p { font-size: 0.875rem; }
   .guide-list-wrapper { padding: 0 !important; }
-  .hero h1 { font-size: 1.8rem; }
+  .hero h1 { font-size: 1.8rem; margin-bottom: 0.375rem; }
   .hero h1 .hl-line { display: block; }
   .featured-grid { grid-template-columns: 1fr; gap: 0.75rem; }
   .featured {
-    margin-top: 0;
+    margin-top: 1.5rem;
     padding: 0 1.25rem 6rem;
   }
   .featured-header { margin-bottom: 0.5rem; }
@@ -367,6 +364,11 @@ footer a { color: var(--gold); text-decoration: none; }
     margin-top: 1rem;
     padding: 0 1.25rem 0.5rem;
   }
+
+  /* 导航卡手机压缩 */
+  .quick-card .qa-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+  .quick-card h3 { font-size: 1rem; margin-bottom: 0.3rem; }
+  .quick-card p { font-size: 0.78rem; }
 
   .bottom-nav { display: block; }
   .bottom-nav-inner { padding: 0.25rem 0; }
@@ -457,7 +459,7 @@ footer a { color: var(--gold); text-decoration: none; }
 }
 
 @media (max-width: 640px) {
-  .quick-card { padding: 0.8rem; }
+  .quick-card { padding: 0.6rem; }
 }
 
 @media (max-width: 400px) {
