@@ -321,7 +321,7 @@ def git_push():
         # commit（nothing to commit 不算失败）
         r_commit = subprocess.run([GIT_EXE, 'commit', '-m', 'admin: publish'], cwd=SITE_DIR, capture_output=True, timeout=10)
         if r_commit.returncode != 0:
-            commit_msg = r_commit.stderr.decode('utf-8', errors='replace')
+            commit_msg = r_commit.stderr.decode('utf-8', errors='replace') + r_commit.stdout.decode('utf-8', errors='replace')
             if 'nothing to commit' not in commit_msg and 'nothing added to commit' not in commit_msg:
                 return False, f'git commit 失败: {commit_msg[:200]}'
 
