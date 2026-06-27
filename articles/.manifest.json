@@ -83,8 +83,32 @@
     "status": "online",
     "sub_category": ""
   },
+  "china-food-dining": {
+    "title": "Food and Dining in China: What to Eat and How to Order",
+    "section": "explore",
+    "status": "draft",
+    "sub_category": "food"
+  },
+  "chinese-food-first-time-guide": {
+    "title": "Essential Chinese Food Guide for First-Time Visitors",
+    "section": "explore",
+    "status": "draft",
+    "sub_category": "food"
+  },
+  "regional-chinese-cuisines-guide": {
+    "title": "Regional Chinese Cuisines: What to Eat Where",
+    "section": "explore",
+    "status": "draft",
+    "sub_category": "food"
+  },
+  "classic-china-beijing-xian-shanghai": {
+    "title": "10-Day China Itinerary: Beijing, Xi'an and Shanghai",
+    "section": "explore",
+    "status": "draft",
+    "sub_category": "itineraries"
+  },
   "7-day-china-itinerary": {
-    "title": "Classic 7-Day China Itinerary — Beijing, Xi'an, Shanghai",
+    "title": "7-Day China Itinerary: Beijing, Xi'an and Shanghai",
     "section": "explore",
     "status": "online",
     "sub_category": "itineraries"

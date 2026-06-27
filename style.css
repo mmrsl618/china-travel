@@ -170,15 +170,15 @@ header {
 }
 .page-header p { color: rgba(255,255,255,0.85); }
 .hero-home { background-image: url("img/hero/hero-home-desktop.webp"); background-position: center center; }
-.hero-before { background-image: url("img/hero/hero-before-desktop.webp"); background-position: center 25%; }
-.hero-transport { background-image: url("img/hero/hero-transport-desktop.webp"); background-position: center 95%; }
-.hero-explore { background-image: url("img/hero/hero-explore-desktop.webp"); background-position: center 55%; }
+.hero-before { background-image: url("img/hero/hero-before-desktop.webp"); background-position: center 8%; }
+.hero-transport { background-image: url("img/hero/hero-transport-desktop.webp"); background-position: center 100%; }
+.hero-explore { background-image: url("img/hero/hero-explore-desktop.webp"); background-position: center 12%; }
 
 @media (max-width: 768px) {
   .hero-home { background-image: url("img/hero/hero-home-mobile.webp"); background-position: center center; }
-  .hero-before { background-image: url("img/hero/hero-before-mobile.webp"); background-position: center 25%; }
-  .hero-transport { background-image: url("img/hero/hero-transport-mobile.webp"); background-position: center 95%; }
-  .hero-explore { background-image: url("img/hero/hero-explore-mobile.webp"); background-position: center 55%; }
+  .hero-before { background-image: url("img/hero/hero-before-mobile.webp"); background-position: center 8%; }
+  .hero-transport { background-image: url("img/hero/hero-transport-mobile.webp"); background-position: center 100%; }
+  .hero-explore { background-image: url("img/hero/hero-explore-mobile.webp"); background-position: center 12%; }
   .hero::before, .page-header::before {
     background: rgba(0,0,0,0.30);
   }
