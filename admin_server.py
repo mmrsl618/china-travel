@@ -1144,12 +1144,15 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             title = info.get('title', '')
             sub_category = info.get('sub_category', '')
 
-            # 读源文件
+            # 读源文件（优先 zh.html，没有则 fallback 到 en.html）
             sp = source_path(fname)
             src_content, err = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
             if not src_content:
-                self.redirect_msg('/admin/draft', 'err', f'找不到源文件: {err}')
-                return
+                pp = published_path(fname)
+                src_content, err = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
+                if not src_content:
+                    self.redirect_msg('/admin/draft', 'err', f'找不到源文件: {err}')
+                    return
 
             t = extract_title(src_content)
             if t:
