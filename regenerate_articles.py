@@ -80,16 +80,10 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
 
     sub_label = ''
     if sub_category:
-        for subs in SUBCAT_MAP.get(section, []):
-            if isinstance(subs, (list, tuple)) and len(subs) >= 2:
-                k, lbl = subs[0], subs[1]
-            else:
-                continue
+        for k, lbl in SUBCAT_MAP.get(section, []):
             if k == sub_category:
                 sub_label = lbl
                 break
-        if sub_label:
-            pass  # already found
 
     last_crumb = sub_label if sub_label else title
     breadcrumb = (f'<div class="breadcrumb" style="font-size:0.85rem;color:#666;'
