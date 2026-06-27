@@ -4,114 +4,132 @@
     <loc>https://visitchinatips.com/</loc>
     <priority>1.0</priority>
     <changefreq>daily</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
     <loc>https://visitchinatips.com/guides/before-you-go.html</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
     <loc>https://visitchinatips.com/guides/getting-around.html</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
     <loc>https://visitchinatips.com/guides/explore.html</loc>
     <priority>0.8</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/arrival-guide/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/china-tourist-visa-l-visa/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/china-tourist-visa-l-visa/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/arrival-guide/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/mobile-payment-in-china/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/china-airport-arrival-step-by-step/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/essential-apps-for-traveling-in-china/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/essential-apps-for-traveling-in-china/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/high-speed-trains/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/vpn-china/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/payment-practical-tips/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/mobile-payment-in-china/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/flights-in-china/en.html</loc>
-    <priority>0.6</priority>
+    <loc>https://visitchinatips.com/articles/payment-practical-tips/article.html</loc>
+    <priority>0.7</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/beijing-travel-guide/en.html</loc>
+    <loc>https://visitchinatips.com/articles/high-speed-trains/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/flights-in-china/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/local-transport-in-china/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/ride-hailing-taxis-china/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/stay-china/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/beijing-travel-guide/article.html</loc>
     <priority>0.7</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/local-transport-in-china/en.html</loc>
-    <priority>0.6</priority>
-    <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
-  </url>
-  <url>
-    <loc>https://visitchinatips.com/articles/vpn-china/en.html</loc>
-    <priority>0.6</priority>
-    <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
-  </url>
-  <url>
-    <loc>https://visitchinatips.com/articles/stay-china/en.html</loc>
-    <priority>0.6</priority>
-    <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
-  </url>
-  <url>
-    <loc>https://visitchinatips.com/articles/how-to-order-food-in-china/en.html</loc>
+    <loc>https://visitchinatips.com/articles/7-day-china-itinerary/article.html</loc>
     <priority>0.7</priority>
-    <changefreq>weekly</changefreq>
-    <lastmod>2026-06-27</lastmod>
-  </url>
-  <url>
-    <loc>https://visitchinatips.com/articles/ride-hailing-taxis-china/en.html</loc>
-    <priority>0.6</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-06-28</lastmod>
   </url>
   <url>
-    <loc>https://visitchinatips.com/articles/china-airport-arrival-step-by-step/en.html</loc>
-    <priority>0.6</priority>
-    <changefreq>monthly</changefreq>
-    <lastmod>2026-06-27</lastmod>
-  </url>
-  <url>
-    <loc>https://visitchinatips.com/articles/7-day-china-itinerary/en.html</loc>
+    <loc>https://visitchinatips.com/articles/how-to-order-food-in-china/article.html</loc>
     <priority>0.7</priority>
-    <changefreq>weekly</changefreq>
-    <lastmod>2026-06-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/chinese-food-first-time-guide/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/classic-china-beijing-xian-shanghai/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/regional-chinese-cuisines-guide/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-06-28</lastmod>
   </url>
 </urlset>

@@ -1,0 +1,24 @@
+name = "china-travel-counter"
+main = "src/index.js"
+compatibility_date = "2025-06-26"
+account_id = "4df2eae986594b277c34376ce9845a5b"
+
+[[kv_namespaces]]
+binding = "PAGE_VIEWS"
+id = "abbf3a722fd34e4d9f38c1c59042abd2"
+
+[[routes]]
+pattern = "*visitchinatips.com/articles/*"
+zone_name = "visitchinatips.com"
+
+[[routes]]
+pattern = "*visitchinatips.com/guides/*"
+zone_name = "visitchinatips.com"
+
+[[routes]]
+pattern = "*visitchinatips.com/api/top-pages*"
+zone_name = "visitchinatips.com"
+
+[observability]
+enabled = true
+head_sampling_rate = 0.01
