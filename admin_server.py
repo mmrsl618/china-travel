@@ -1126,10 +1126,18 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             # 更新 manifest（新建草稿默认 zh_draft，已有文章保持原状态）
             manifest = get_manifest()
             old_status = manifest.get(fname, {}).get('status', 'zh_draft')
+            old_title = manifest.get(fname, {}).get('title', '')
             # 废弃 zh_approved → 改为 zh_draft
             if old_status == 'zh_approved':
                 old_status = 'zh_draft'
             set_article_manifest(fname, title or fname, section, old_status, sub_category)
+            # 标题变了 & 文章已上站/待上站 → 同步更新 guide 列表页链接文本
+            if old_title and old_title != (title or fname) and old_status in ('en_draft', 'online'):
+                info = manifest.get(fname, {})
+                old_section = info.get('section', section)
+                old_sub = info.get('sub_category', sub_category)
+                update_guide_listing(old_section, old_sub, fname, old_title, remove=True)
+                update_guide_listing(section, sub_category, fname, title or fname)
             self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'ok', '已保存成功')
             return
 
@@ -1256,10 +1264,9 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             set_article_manifest(fname, title, section, 'online', sub_category)
 
             # 自动更新 guide 列表页（确保链接存在）
-            if sub_category:
-                ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
-                if not ok_gl:
-                    print(f'[republish] ⚠️ guide 列表更新失败: {err_gl}')
+            ok_gl, err_gl = update_guide_listing(section, sub_category, fname, title)
+            if not ok_gl:
+                print(f'[republish] ⚠️ guide 列表更新失败: {err_gl}')
             # 更新 KV URL 映射
             ok_map, err_map = update_kv_url_map()
             if not ok_map:
