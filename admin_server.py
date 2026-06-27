@@ -9,7 +9,7 @@
 端口 8082 | ThreadingTCPServer
 
 导航栏三栏：
-  📫 待审草稿 /admin/draft   — 英文源稿 → 编辑 + 通过(套壳生成 en.html，不 push)
+  📫 待审草稿 /admin/draft   — 源文件 → 编辑 + 通过(套壳生成 article.html，不 push)
   📪 待上站  /admin/publish — 已套壳待发布 → 预览 + 编辑(提示撤回) + 上站(git push)
   ✅ 已上站  /admin/done     — 已上线 → 编辑/重新发布/删除
 
@@ -36,12 +36,12 @@ def article_dir(fname):
     return os.path.join(ARTICLES_DIR, fname)
 
 def source_path(fname):
-    """zh.html 路径（历史初稿）"""
-    return os.path.join(ARTICLES_DIR, fname, 'zh.html')
+    """source.html 路径（源文件，不含模板套壳）"""
+    return os.path.join(ARTICLES_DIR, fname, 'source.html')
 
 def published_path(fname):
-    """已发布英文稿路径"""
-    return os.path.join(ARTICLES_DIR, fname, 'en.html')
+    """article.html 路径（套壳成品，上站推送）"""
+    return os.path.join(ARTICLES_DIR, fname, 'article.html')
 
 GUIDE_MAP = [
     ('before-you-go', 'Before You Go'),
@@ -155,7 +155,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
         print(f'[update_guide_listing] ❌ 找不到 {guide_path}: {err}')
         return False, f'找不到 {guide_path}: {err}'
 
-    link_html = f'<a href="../articles/{fname}/en.html" class="article-link">{html_escape(title)}</a>'
+    link_html = f'<a href="../articles/{fname}/article.html" class="article-link">{html_escape(title)}</a>'
 
     if remove:
         # 删除链接（连带前后空白和换行）
@@ -200,7 +200,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
     tag_end = content.index('>', tab_start) + 1
 
     # 去重检查
-    if f'href="../articles/{fname}/en.html"' in content[tag_end:]:
+    if f'href="../articles/{fname}/article.html"' in content[tag_end:]:
         return True, None  # 已存在，跳过
 
     # 找 article-list
@@ -684,9 +684,9 @@ fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
     var rows="";
     data.forEach(function(item,i){
       var path=item.path;
-      var name=item.title||path.replace("/articles/","").replace("/en.html","").replace(/-/g," ");
+      var name=item.title||path.replace("/articles/","").replace("/article.html","").replace(/-/g," ");
       var rank=i==0?"🥇":i==1?"🥈":i==2?"🥉":(i+1)+".";
-      var href=item.guide_url||path.replace("/articles/","guides/").replace("/en.html",".html");
+      var href=item.guide_url||path.replace("/articles/","guides/").replace("/article.html",".html");
       rows+='<tr style="border-bottom:1px solid #eee;">'+
         '<td style="padding:0.5rem;width:2.5rem;">'+rank+'</td>'+
         '<td style="padding:0.5rem;"><a href="'+href+'" target="_blank">'+name+'</a></td>'+
@@ -706,7 +706,7 @@ fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
 # =====================================================================
 def render_draft_page(msg=None):
     """待审草稿页 — 显示 status=zh_draft 或 draft 的文章
-    按钮：【编辑】→ 编辑 zh.html；【通过】→ 套壳生成 en.html → en_draft（不 push）
+    按钮：【编辑】→ 编辑 source.html；【通过】→ 套壳生成 article.html → en_draft（不 push）
     """
     manifest = get_manifest()
     rows = ''
@@ -758,7 +758,7 @@ def render_draft_page(msg=None):
 
 def render_publish_page(msg=None):
     """待上站页 — 显示 status=en_draft 的文章
-    按钮：【预览】→ 打开 en.html；【编辑】→ 提示撤回；【上站】→ git push → online
+    按钮：【预览】→ 打开 article.html；【编辑】→ 提示撤回；【上站】→ git push → online
     """
     manifest = get_manifest()
     rows = ''
@@ -771,7 +771,7 @@ def render_publish_page(msg=None):
 
         count += 1
         title = info.get('title', fname)
-        # 尝试从 en.html 提取标题
+        # 尝试从 article.html 提取标题
         pp = published_path(fname)
         pub_content, _ = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
         if pub_content:
@@ -788,7 +788,7 @@ def render_publish_page(msg=None):
         section = info.get('section', '')
         section_label = GUIDE_SECTIONS.get(section, section)
 
-        preview_url = f'http://localhost:8080/articles/{fname}/en.html'
+        preview_url = f'http://localhost:8080/articles/{fname}/article.html'
         action_btns = f'''
 <a class="btn btn-preview" href="javascript:void(0)" onclick="window.open('{preview_url}','_blank')">👁 预览</a>
 <a class="btn btn-edit" href="javascript:void(0)" onclick="alert('此文章已套壳，如需修改请先撤回草稿，改完重新通过')">✏️ 编辑</a>
@@ -843,7 +843,7 @@ def render_done_page(section_key, sub='', msg=None):
             continue
         count += 1
         title = info.get('title', fname)
-        preview_url = f'https://visitchinatips.com/articles/{fname}/en.html'
+        preview_url = f'https://visitchinatips.com/articles/{fname}/article.html'
         edit_from = f'done-{section_key}-{sub}' if sub else f'done-{section_key}'
         edit_url = f'/admin/edit?path={fname}&from={edit_from}'
         rows += f'''<div class="row">
@@ -896,7 +896,7 @@ def render_edit_page(fname, return_to='draft', msg=None):
     sub_category = info.get('sub_category', '')
 
     if not is_new:
-        # 优先读 zh.html 源文件（用户的工作副本）
+        # 读 source.html 源文件
         sp = source_path(fname)
         src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
         if src_content:
@@ -914,14 +914,14 @@ def render_edit_page(fname, return_to='draft', msg=None):
             content = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', content, flags=re.DOTALL)
             content = content.strip()
 
-        # 如果 zh.html 为空，尝试从已发布文章（en.html）恢复
+        # 如果 source.html 为空，跳过
         if not content:
             pp = published_path(fname)
             pub_content, _ = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
             if pub_content:
                 m = re.search(r'<div class="article">(.*?)</div>\s*</div>\s*<footer', pub_content, re.DOTALL)
                 body = m.group(1).strip() if m else pub_content
-                # 剥离 en.html 中已有的 <h1>（避免和合成的标题重复）
+                # 剥离 article.html 中已有的 <h1>（避免和合成的标题重复）
                 body = re.sub(r'\s*<h1[^>]*>.*?</h1>\s*', '', body, count=1, flags=re.DOTALL)
                 # 剥离面包屑
                 body = re.sub(r'\s*<div class="breadcrumb".*?</div>\s*', '', body, flags=re.DOTALL)
@@ -1132,7 +1132,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'ok', '已保存成功')
             return
 
-        # ---- 通过（待审草稿 → 套壳生成 en.html → en_draft，不 push） ----
+        # ---- 通过（待审草稿 → 套壳生成 article.html → en_draft，不 push） ----
         if path == '/admin/pass':
             fname = data.get('path', [None])[0]
             if not fname:
@@ -1144,22 +1144,19 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             title = info.get('title', '')
             sub_category = info.get('sub_category', '')
 
-            # 读源文件（优先 zh.html，没有则 fallback 到 en.html）
+            # 读源文件 source.html
             sp = source_path(fname)
             src_content, err = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
             if not src_content:
-                pp = published_path(fname)
-                src_content, err = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
-                if not src_content:
-                    self.redirect_msg('/admin/draft', 'err', f'找不到源文件: {err}')
-                    return
+                self.redirect_msg('/admin/draft', 'err', f'找不到源文件: {err}')
+                return
 
             t = extract_title(src_content)
             if t:
                 title = t
             body_content = strip_title(src_content)
 
-            # 套模板（含面包屑），生成 en.html
+            # 套模板（含面包屑），生成 article.html
             final_html = apply_master_template(body_content, title, '', section, sub_category)
             pp = published_path(fname)
             ok, err = write_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'), final_html)

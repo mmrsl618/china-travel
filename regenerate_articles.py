@@ -131,10 +131,10 @@ def main():
         # 非 explore 板块清空 sub_category（因为不再分子分类）
         new_subcategory = old_subcategory if new_section == 'explore' else ''
 
-        zh_path = f'articles/{fname}/zh.html'
+        zh_path = f'articles/{fname}/source.html'
         zh_content = read_file(zh_path)
         if not zh_content:
-            print(f'  SKIP {fname}: 找不到 zh.html')
+            print(f'  SKIP {fname}: 找不到 source.html')
             continue
 
         title = extract_title(zh_content)
@@ -143,7 +143,7 @@ def main():
 
         en_content = apply_master_template(body, title, desc, new_section, new_subcategory)
 
-        en_path = f'articles/{fname}/en.html'
+        en_path = f'articles/{fname}/article.html'
         if write_file(en_path, en_content):
             regenerated += 1
             if old_section != new_section or old_subcategory != new_subcategory:
