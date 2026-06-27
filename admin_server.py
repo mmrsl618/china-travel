@@ -265,12 +265,9 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
     section_url = f'../../guides/{section}.html'
     sub_label = ''
     if sub_category:
-        for subs in SUBCAT_MAP.get(section, []):
-            for k, lbl in subs:
-                if k == sub_category:
-                    sub_label = lbl
-                    break
-            if sub_label:
+        for k, lbl in SUBCAT_MAP.get(section, []):
+            if k == sub_category:
+                sub_label = lbl
                 break
     last_crumb = sub_label if sub_label else title
     breadcrumb = (f'<div class="breadcrumb" style="font-size:0.85rem;color:#666;'
@@ -298,7 +295,12 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
 # =====================================================================
 def extract_title(content):
     m = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.DOTALL)
-    return m.group(1).strip() if m else ''
+    if not m:
+        return ''
+    raw = m.group(1).strip()
+    # 防崩：去掉h1内嵌套的HTML标签（有人复制粘贴带格式）
+    raw = re.sub(r'<[^>]+>', '', raw)
+    return raw.strip()
 
 def strip_title(content):
     return re.sub(r'\s*<h1[^>]*>.*?</h1>\s*', '', content, count=1, flags=re.DOTALL)
