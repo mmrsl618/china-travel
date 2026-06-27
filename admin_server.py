@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v5.0
+"""admin_server.py — 管理后台 v5.1
+ - v5.1: 状态机简化：draft → ready → online；去"待上站"中间页；导航两栏(草稿+已上站)
  - v5.0: 文件结构统一；zh.html→source.html, en.html→article.html；老URL跳转+canonical保排名
- - v4.4: 代码整理；import shutil 提至顶层；修正 [go-live] 日志标签；清除重复赋值
- - v4.3: 流量统计页（Cloudflare API）；Featured 动态化；热门排行（Worker API）；URL 映射集成
- - v4.2: 待上站（publish）/ 撤回草稿 / 重新发布 / 删除 功能完善
- - v4.1: 修复 update_guide_listing() tab查找逻辑；预览链接指向线上域名；导航加文章数量；文字"已上线"→"已上站"
- - v4.0: 适配文件夹结构；Git proxy 清掉，靠Windows系统代理
 
 端口 8082 | ThreadingTCPServer
 
-导航栏三栏：
-  📫 待审草稿 /admin/draft   — 源文件 → 编辑 + 通过(套壳生成 article.html，不 push)
-  📪 待上站  /admin/publish — 已套壳待发布 → 预览 + 编辑(提示撤回) + 上站(git push)
-  ✅ 已上站  /admin/done     — 已上线 → 编辑/重新发布/删除
+导航栏两栏：
+  📝 草稿     /admin/draft — 待审(draft) → 三哥点通过 → ready → 文章从草稿区消失
+                                                              → 小二上线 → online
+  ✅ 已上站  /admin/done   — 已上线(online) → 编辑/重新发布/删除
 
-状态流转：待审稿 → [通过] 套壳 → 待上站 → [上站] git push → 已上线
+状态流转：draft → [通过] 套壳(不push) → ready → [小二 go-live] git push → online
 """
 import os, sys, re, json, shutil, urllib.parse, urllib.request
 import http.server, socketserver
@@ -104,16 +100,7 @@ def get_manifest():
         return {}
     try:
         with open(MANIFEST_PATH, 'r', encoding='utf-8') as f:
-            m = json.load(f)
-            # 废弃 zh_approved → zh_draft 自动迁移
-            dirty = False
-            for fname, info in m.items():
-                if info.get('status') == 'zh_approved':
-                    info['status'] = 'zh_draft'
-                    dirty = True
-            if dirty:
-                save_manifest(m)
-            return m
+            return json.load(f)
     except:
         return {}
 
@@ -464,16 +451,13 @@ def _count_articles(manifest, status_filter):
         return '?'
 
 def sidebar_nav(current_page):
-    """生成左侧导航 — v4.0 三栏"""
+    """生成左侧导航 — v5.1 两栏"""
     manifest = get_manifest()
-    draft_cnt = _count_articles(manifest, lambda s: s in ('zh_draft', 'draft'))
-    pub_cnt   = _count_articles(manifest, lambda s: s == 'en_draft')
+    draft_cnt = _count_articles(manifest, lambda s: s in ('draft',))
     done_cnt  = _count_articles(manifest, lambda s: s == 'online')
     draft_active = ' active' if current_page == 'draft' else ''
-    publish_active = ' active' if current_page == 'publish' else ''
-    html = f'<a class="nav-item{draft_active}" href="/admin/draft">📫 待审草稿({draft_cnt})</a>'
-    html += f'<a class="nav-item{publish_active}" href="/admin/publish">📪 待上站({pub_cnt})</a>'
-    # 已上站（汉堡式导航，5个板块）
+    html = f'<a class="nav-item{draft_active}" href="/admin/draft">📝 草稿({draft_cnt})</a>'
+    # 已上站（汉堡式导航，3个板块）
     is_online = current_page.startswith('done')
     html += f'''<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">
 ✅ 已上站({done_cnt}) <span class="arrow">▸</span></div>'''
@@ -706,16 +690,15 @@ fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
 #  页面渲染函数
 # =====================================================================
 def render_draft_page(msg=None):
-    """待审草稿页 — 显示 status=zh_draft 或 draft 的文章
-    按钮：【编辑】→ 编辑 source.html；【通过】→ 套壳生成 article.html → en_draft（不 push）
-    """
+    """草稿页 — v5.1: 仅待审，不显示待上线（小二用命令行上线）"""
     manifest = get_manifest()
+
     rows = ''
     count = 0
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
         info = manifest[fname]
         status = info.get('status', 'draft')
-        if status not in ('draft', 'zh_draft'):
+        if status != 'draft':
             continue
 
         count += 1
@@ -732,96 +715,31 @@ def render_draft_page(msg=None):
         action_btns = f'''
 <a class="btn btn-edit" href="/admin/edit?path={fname}&from=draft">✏️ 编辑</a>
 <form method="POST" action="/admin/pass" style="display:inline"
-      onsubmit="return confirm('确认通过？将套壳发布（不推送上线）')">
+      onsubmit="return confirm('确认通过？将套壳生成 article.html，状态变为 ready')">
 <input type="hidden" name="path" value="{fname}">
 <button type="submit" class="btn btn-done">✅ 通过</button></form>'''
 
         rows += f'''<div class="row" data-keyword="{html_escape(title).lower()} {fname.lower()}">
 <div class="info">
 <div class="name">{html_escape(title)}</div>
-<div class="path">{fname} · {section_label} · {status}</div>
+<div class="path">{fname} · {section_label} · 待审</div>
 </div>
 <div class="actions">{action_btns}
 </div></div>'''
 
     if count == 0:
-        rows = '<div class="empty">暂无待审草稿</div>'
-    msg_html = _msg_html(msg)
+        rows = '<div class="empty">暂无待审文章</div>'
 
+    msg_html = _msg_html(msg)
     search_html = _search_bar('draft-search')
-    return render_page('待审草稿',
+
+    return render_page('草稿',
         f'''<div class="card">
-<div class="card-title">📫 待审草稿（共 {count} 篇）</div>
+<div class="card-title">📝 待审（共 {count} 篇）</div>
 {search_html}
 {msg_html}
 <div id="draft-list">{rows}</div>
 </div>''', 'draft')
-
-def render_publish_page(msg=None):
-    """待上站页 — 显示 status=en_draft 的文章
-    按钮：【预览】→ 打开 article.html；【编辑】→ 提示撤回；【上站】→ git push → online
-    """
-    manifest = get_manifest()
-    rows = ''
-    count = 0
-    for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
-        info = manifest[fname]
-        status = info.get('status', 'en_draft')
-        if status != 'en_draft':
-            continue
-
-        count += 1
-        title = info.get('title', fname)
-        # 尝试从 article.html 提取标题
-        pp = published_path(fname)
-        pub_content, _ = read_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'))
-        if pub_content:
-            pub_title = extract_title(pub_content)
-            if pub_title:
-                title = pub_title
-        else:
-            sp = source_path(fname)
-            src_content, _ = read_file(os.path.relpath(sp, SITE_DIR).replace('\\', '/'))
-            if src_content:
-                src_title = extract_title(src_content)
-                if src_title:
-                    title = src_title
-        section = info.get('section', '')
-        section_label = GUIDE_SECTIONS.get(section, section)
-
-        preview_url = f'http://localhost:8080/articles/{fname}/article.html'
-        action_btns = f'''
-<a class="btn btn-preview" href="javascript:void(0)" onclick="window.open('{preview_url}','_blank')">👁 预览</a>
-<a class="btn btn-edit" href="javascript:void(0)" onclick="alert('此文章已套壳，如需修改请先撤回草稿，改完重新通过')">✏️ 编辑</a>
-<form method="POST" action="/admin/withdraw" style="display:inline"
-      onsubmit="return confirm('确认撤回草稿？manifest 将回到 zh_draft')">
-<input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn" style="background:#6c757d;color:#fff;">↩ 撤回</button></form>
-<form method="POST" action="/admin/go-live" style="display:inline"
-      onsubmit="return confirm('确认上站？将 git push 到线上')">
-<input type="hidden" name="path" value="{fname}">
-<button type="submit" class="btn btn-done" style="background:#DE2910;">🚀 上站</button></form>'''
-
-        rows += f'''<div class="row" data-keyword="{html_escape(title).lower()} {fname.lower()}">
-<div class="info">
-<div class="name">{html_escape(title)}</div>
-<div class="path">{fname} · {section_label} · {status}</div>
-</div>
-<div class="actions">{action_btns}
-</div></div>'''
-
-    if count == 0:
-        rows = '<div class="empty">暂无待上站文章</div>'
-    msg_html = _msg_html(msg)
-
-    search_html = _search_bar('publish-search')
-    return render_page('待上站',
-        f'''<div class="card">
-<div class="card-title">📪 待上站（共 {count} 篇）</div>
-{search_html}
-{msg_html}
-<div id="publish-list">{rows}</div>
-</div>''', 'publish')
 
 def render_done_page(section_key, sub='', msg=None):
     """已上站：按板块列出已发布的文章，可选按子分类过滤"""
@@ -976,10 +894,7 @@ secSel.addEventListener('change',function(){
         back_label = '返回已上站'
     else:
         back_url = '/admin/draft'
-        back_label = '返回草稿管理'
-        if return_to == 'publish':
-            back_url = '/admin/publish'
-            back_label = '返回待上站'
+        back_label = '返回草稿'
     path_readonly = ' readonly' if not is_new else ''
 
     # 修正编辑页图片路径：相对路径 → 绝对路径（浏览器在 /admin/ 下解析不到）
@@ -1049,16 +964,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.send_redirect('/admin/draft')
             return
 
-        # 待审草稿（新统一页）
+        # 草稿页
         if path == '/admin/draft':
             msg = qs.get('msg', [None])[0]
             self.send_html(render_draft_page(msg))
-            return
-
-        # 待上站
-        if path == '/admin/publish':
-            msg = qs.get('msg', [None])[0]
-            self.send_html(render_publish_page(msg))
             return
 
         # 已上站板块
@@ -1123,16 +1032,13 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             if not ok:
                 self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'err', f'保存失败:{err}')
                 return
-            # 更新 manifest（新建草稿默认 zh_draft，已有文章保持原状态）
+            # 更新 manifest（新建草稿默认 draft，已有文章保持原状态）
             manifest = get_manifest()
-            old_status = manifest.get(fname, {}).get('status', 'zh_draft')
+            old_status = manifest.get(fname, {}).get('status', 'draft')
             old_title = manifest.get(fname, {}).get('title', '')
-            # 废弃 zh_approved → 改为 zh_draft
-            if old_status == 'zh_approved':
-                old_status = 'zh_draft'
             set_article_manifest(fname, title or fname, section, old_status, sub_category)
-            # 标题变了 & 文章已上站/待上站 → 同步更新 guide 列表页链接文本
-            if old_title and old_title != (title or fname) and old_status in ('en_draft', 'online'):
+            # 标题变了 & 文章已上线 → 同步更新 guide 列表页链接文本
+            if old_title and old_title != (title or fname) and old_status == 'online':
                 info = manifest.get(fname, {})
                 old_section = info.get('section', section)
                 old_sub = info.get('sub_category', sub_category)
@@ -1141,7 +1047,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.redirect_msg(f'/admin/edit?path={urllib.parse.quote(fname)}&from={return_to}', 'ok', '已保存成功')
             return
 
-        # ---- 通过（待审草稿 → 套壳生成 article.html → en_draft，不 push） ----
+        # ---- 通过（草稿 → 套壳生成 article.html → ready，不 push） ----
         if path == '/admin/pass':
             fname = data.get('path', [None])[0]
             if not fname:
@@ -1173,16 +1079,16 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 self.redirect_msg('/admin/draft', 'err', f'套壳失败: {err}')
                 return
 
-            # manifest 改为 en_draft（不 push）
-            set_article_manifest(fname, title, section, 'en_draft', sub_category)
-            self.redirect_msg('/admin/draft', 'ok', f'「{title}」已通过，英文版已生成，请到待上站列表检查')
+            # manifest 改为 ready（不 push，等小二上线）
+            set_article_manifest(fname, title, section, 'ready', sub_category)
+            self.redirect_msg('/admin/draft', 'ok', f'「{title}」已通过，等待小二上站')
             return
 
-        # ---- 上站（待上站 → git push → online） ----
+        # ---- 上站（ready → git push → online） ----
         if path == '/admin/go-live':
             fname = data.get('path', [None])[0]
             if not fname:
-                self.redirect_msg('/admin/publish', 'err', '参数错误')
+                self.redirect_msg('/admin/draft', 'err', '参数错误')
                 return
             manifest = get_manifest()
             info = manifest.get(fname, {})
@@ -1204,31 +1110,13 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 ok_map, err_map = update_kv_url_map()
                 if not ok_map:
                     print(f'[go-live] ⚠️ URL 映射更新失败: {err_map}')
-                self.redirect_msg('/admin/publish', 'ok', f'「{title}」已上站，成功上线到网站')
+                self.redirect_msg('/admin/draft', 'ok', f'「{title}」已上站，成功上线到网站')
             else:
-                # push 失败，manifest 不动（保持 en_draft），文章不消失
-                self.redirect_msg('/admin/publish', 'err', f'上站失败: {git_err}')
+                # push 失败，manifest 不动（保持 ready），文章不消失
+                self.redirect_msg('/admin/draft', 'err', f'上站失败: {git_err}')
             return
 
-        # ---- 撤回草稿（en_draft → zh_draft） ----
-        if path == '/admin/withdraw':
-            fname = data.get('path', [None])[0]
-            if not fname:
-                self.redirect_msg('/admin/publish', 'err', '参数错误')
-                return
-            manifest = get_manifest()
-            info = manifest.get(fname, {})
-            title = info.get('title', fname)
-            section = info.get('section', 'before-you-go')
-            sub_category = info.get('sub_category', '')
-
-            info['status'] = 'zh_draft'
-            manifest[fname] = info
-            save_manifest(manifest)
-            self.redirect_msg('/admin/draft', 'ok', f'「{title}」已撤回草稿，可重新编辑')
-            return
-
-        # ---- 重新发布（已上站文章） ----
+        # ---- 重新发布（已上站文章重新套壳 + git push） ----
         if path == '/admin/republish':
             fname = data.get('path', [None])[0]
             section = data.get('section', [None])[0] or 'before-you-go'
