@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v4.4
+"""admin_server.py — 管理后台 v5.0
+ - v5.0: 文件结构统一；zh.html→source.html, en.html→article.html；老URL跳转+canonical保排名
  - v4.4: 代码整理；import shutil 提至顶层；修正 [go-live] 日志标签；清除重复赋值
  - v4.3: 流量统计页（Cloudflare API）；Featured 动态化；热门排行（Worker API）；URL 映射集成
  - v4.2: 待上站（publish）/ 撤回草稿 / 重新发布 / 删除 功能完善
