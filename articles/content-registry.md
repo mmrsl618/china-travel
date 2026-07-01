@@ -4,7 +4,7 @@
 > **开工前必读此文件**，确认未写过重复内容后再动笔。
 > **写完后更新此文件**，补充主题、板块、标题、二级标题。
 
-共 19 篇
+共 18 篇
 
 ---
 ## ✅ 已上线
@@ -181,19 +181,6 @@
   - The Fiery Southwest: Sichuan, Hunan, and Guizhou
   - The Refined East: Shanghai, Jiangsu, and Zhejiang
   - Southern Comfort: Cantonese, Fujian, and the Southeast
-
-### China Travel Budget: How Much Does a Trip Really Cost (2026)
-- **文件夹：** `china-travel-budget`
-- **板块：** Before You Go
-- **子分类：** -
-- **二级标题：**
-  - International Flights — The Biggest Variable
-  - Accommodation — Where You Sleep Determines Your Budget
-  - Food and Dining — Eat Well at Any Price
-  - Getting Around — Trains, Taxis, and Local Transport
-  - Attractions and Entry Fees — What Sightseeing Costs
-  - Visa and Pre-Trip Paperwork
-  - Connectivity, Shopping, and the Extras
 
 ---
 ## ✅ 已上线
