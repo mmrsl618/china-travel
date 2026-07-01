@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-"""admin_server.py — 管理后台 v5.1
- - v5.1: 状态机简化：draft → ready → online；去"待上站"中间页；导航两栏(草稿+已上站)
+"""admin_server.py — 管理后台 v5.2
+ - v5.2: 恢复三栏导航(草稿+待上站+已上站)；__SLUG__ 自动替换；sidebar_nav 统一
+ - v5.1: 状态机简化：draft → ready → online；两栏导航(草稿+已上站)
  - v5.0: 文件结构统一；zh.html→source.html, en.html→article.html；老URL跳转+canonical保排名
 
 端口 8082 | ThreadingTCPServer
 
-导航栏两栏：
-  📝 草稿     /admin/draft — 待审(draft) → 三哥点通过 → ready → 文章从草稿区消失
-                                                              → 小二上线 → online
-  ✅ 已上站  /admin/done   — 已上线(online) → 编辑/重新发布/删除
+导航栏三栏：
+  📝 草稿     /admin/draft   — 待审(draft) → 三哥点"通过" → 套壳 → 文章消失，进待上站
+  🚀 待上站  /admin/pending — 套壳完成(ready) → 小二预览 → 点"上站" → git push → online
+  ✅ 已上站  /admin/done    — 已上线(online) → 编辑/重新发布/删除
 
-状态流转：draft → [通过] 套壳(不push) → ready → [小二 go-live] git push → online
+状态流转：draft → [通过] 套壳(__SLUG__替换+不push) → ready → [小二上站] git push → online
 """
-import os, sys, re, json, shutil, urllib.parse, urllib.request
+import os, sys, re, json, urllib.parse, urllib.request
 import http.server, socketserver
 import subprocess
 from datetime import datetime, timedelta
@@ -228,7 +229,7 @@ def update_guide_listing(section, sub_category, fname, title, remove=False):
 # =====================================================================
 #  模板套壳
 # =====================================================================
-def apply_master_template(content, title, desc, section='', sub_category=''):
+def apply_master_template(content, title, desc, section='', sub_category='', slug=''):
     tpl_path = os.path.join(SITE_DIR, 'templates', 'article-master.html')
     try:
         with open(tpl_path, 'r', encoding='utf-8') as f:
@@ -274,6 +275,8 @@ def apply_master_template(content, title, desc, section='', sub_category=''):
 
     tpl = tpl.replace('__CONTENT__', breadcrumb + content)
     tpl = tpl.replace('__TITLE__', title)
+    if slug:
+        tpl = tpl.replace('__SLUG__', slug)
     tpl = tpl.replace('__DESCRIPTION__', desc)
     tpl = tpl.replace('__NAV__', nav_html)
     return tpl
@@ -296,6 +299,32 @@ def strip_title(content):
 # =====================================================================
 #  Git 同步
 # =====================================================================
+def add_to_sitemap(fname, title):
+    """在 sitemap.xml 中追加文章 URL（去重，不重复添加）"""
+    sitemap_path = os.path.join(SITE_DIR, 'sitemap.xml')
+    today = datetime.now().strftime('%Y-%m-%d')
+    article_url = f'https://visitchinatips.com/articles/{fname}/article.html'
+
+    try:
+        with open(sitemap_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except:
+        return
+
+    # 已存在则跳过
+    if article_url in content:
+        return
+
+    entry = f'''  <url>
+    <loc>{article_url}</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>{today}</lastmod>
+  </url>\n'''
+    content = content.replace('</urlset>', entry + '</urlset>')
+    with open(sitemap_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
 def git_push():
     """git add + commit + push，不写死代理，由系统 git 自行读取用户配置"""
     if not os.path.isdir(os.path.join(SITE_DIR, '.git')):
@@ -451,21 +480,27 @@ def _count_articles(manifest, status_filter):
         return '?'
 
 def sidebar_nav(current_page):
-    """生成左侧导航 — v5.1 两栏"""
+    """生成左侧导航 — 三栏：草稿 / 待上站 / 已上站"""
     manifest = get_manifest()
-    draft_cnt = _count_articles(manifest, lambda s: s in ('draft',))
-    done_cnt  = _count_articles(manifest, lambda s: s == 'online')
-    draft_active = ' active' if current_page == 'draft' else ''
-    html = f'<a class="nav-item{draft_active}" href="/admin/draft">📝 草稿({draft_cnt})</a>'
-    # 已上站（汉堡式导航，3个板块）
-    is_online = current_page.startswith('done')
-    html += f'''<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">
-✅ 已上站({done_cnt}) <span class="arrow">▸</span></div>'''
-    ch = ''.join(
-        _section_nav_html(k, v, current_page)
-        for k, v in GUIDE_MAP)
-    html += f'<div class="nav-child{" show" if is_online else ""}" id="done-child">{ch}</div>'
-    # JavaScript 控制折叠（两层折叠）
+    draft_cnt = _count_articles(manifest, lambda s: s == 'draft')
+    pend_cnt = _count_articles(manifest, lambda s: s == 'ready')
+    done_cnt = _count_articles(manifest, lambda s: s == 'online')
+
+    html = ''
+    for label, page, cnt in [
+        ('📝 草稿', 'draft', draft_cnt),
+        ('🚀 待上站', 'pending', pend_cnt),
+        ('✅ 已上站', 'done', done_cnt),
+    ]:
+        if page == 'done':
+            is_online = current_page.startswith('done')
+            html += f'<div class="nav-item nav-parent{" open" if is_online else ""}" onclick="toggleDone()">✅ 已上站({done_cnt}) <span class="arrow">▸</span></div>'
+            ch = ''.join(_section_nav_html(k, v, current_page) for k, v in GUIDE_MAP)
+            html += f'<div class="nav-child{" show" if is_online else ""}" id="done-child">{ch}</div>'
+        else:
+            active = ' active' if current_page == page else ''
+            html += f'<a class="nav-item{active}" href="/admin/{page}">{label}({cnt})</a>'
+
     js = '''<script>
 function toggleDone(){
   var c=document.getElementById('done-child');
@@ -690,17 +725,15 @@ fetch("https://visitchinatips.com/api/top-pages?"+Date.now())
 #  页面渲染函数
 # =====================================================================
 def render_draft_page(msg=None):
-    """草稿页 — v5.1: 仅待审，不显示待上线（小二用命令行上线）"""
+    """草稿页 — 仅待审 draft"""
     manifest = get_manifest()
 
     rows = ''
     count = 0
     for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
         info = manifest[fname]
-        status = info.get('status', 'draft')
-        if status != 'draft':
+        if info.get('status') != 'draft':
             continue
-
         count += 1
         title = info.get('title', fname)
         sp = source_path(fname)
@@ -740,6 +773,53 @@ def render_draft_page(msg=None):
 {msg_html}
 <div id="draft-list">{rows}</div>
 </div>''', 'draft')
+
+
+def render_pending_page(msg=None):
+    """待上站页 — ready 状态，含本地预览"""
+    manifest = get_manifest()
+
+    rows = ''
+    count = 0
+    for fname in sorted(manifest.keys(), key=lambda x: manifest[x].get('title', x)):
+        info = manifest[fname]
+        if info.get('status') != 'ready':
+            continue
+        count += 1
+        title = info.get('title', fname)
+        section = info.get('section', '')
+        section_label = GUIDE_SECTIONS.get(section, section)
+        sub_category = info.get('sub_category', '')
+        preview_url = f'/articles/{fname}/article.html'
+
+        rows += f'''<div class="row" data-keyword="{html_escape(title).lower()} {fname.lower()}">
+<div class="info">
+<div class="name">{html_escape(title)}</div>
+<div class="path">{fname} · {section_label} · 等待上站</div>
+</div>
+<div class="actions">
+<a class="btn btn-edit" href="{preview_url}" target="_blank">👁 预览</a>
+<form method="POST" action="/admin/go-live" style="display:inline"
+      onsubmit="return confirm('确认上站？将 git push 并标记 online')">
+<input type="hidden" name="path" value="{fname}">
+<input type="hidden" name="section" value="{section}">
+<input type="hidden" name="sub_category" value="{sub_category}">
+<button type="submit" class="btn btn-done">🚀 上站</button></form>
+</div></div>'''
+
+    if count == 0:
+        rows = '<div class="empty">暂无等待上站的文章</div>'
+
+    msg_html = _msg_html(msg)
+    search_html = _search_bar('pending-search')
+
+    return render_page('待上站',
+        f'''<div class="card">
+<div class="card-title">🚀 待上站（共 {count} 篇）</div>
+{search_html}
+{msg_html}
+<div id="pending-list">{rows}</div>
+</div>''', 'pending')
 
 def render_done_page(section_key, sub='', msg=None):
     """已上站：按板块列出已发布的文章，可选按子分类过滤"""
@@ -970,6 +1050,12 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             self.send_html(render_draft_page(msg))
             return
 
+        # 待上站页
+        if path == '/admin/pending':
+            msg = qs.get('msg', [None])[0]
+            self.send_html(render_pending_page(msg))
+            return
+
         # 已上站板块
         m = re.match(r'/admin/done/([\w-]+)/?$', path)
         if m:
@@ -1072,7 +1158,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             body_content = strip_title(src_content)
 
             # 套模板（含面包屑），生成 article.html
-            final_html = apply_master_template(body_content, title, '', section, sub_category)
+            final_html = apply_master_template(body_content, title, '', section, sub_category, slug=fname)
             pp = published_path(fname)
             ok, err = write_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'), final_html)
             if not ok:
@@ -1081,7 +1167,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
 
             # manifest 改为 ready（不 push，等小二上线）
             set_article_manifest(fname, title, section, 'ready', sub_category)
-            self.redirect_msg('/admin/draft', 'ok', f'「{title}」已通过，等待小二上站')
+            self.redirect_msg('/admin/pending', 'ok', f'「{title}」已通过，等待上站')
             return
 
         # ---- 上站（ready → git push → online） ----
@@ -1096,7 +1182,8 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
             section = info.get('section', 'before-you-go')
             sub_category = info.get('sub_category', '')
 
-            # git push
+            # 更新 sitemap + git push
+            add_to_sitemap(fname, title)
             git_ok, git_err = git_push()
 
             if git_ok:
@@ -1110,10 +1197,10 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                 ok_map, err_map = update_kv_url_map()
                 if not ok_map:
                     print(f'[go-live] ⚠️ URL 映射更新失败: {err_map}')
-                self.redirect_msg('/admin/draft', 'ok', f'「{title}」已上站，成功上线到网站')
+                self.redirect_msg('/admin/pending', 'ok', f'「{title}」已上站，成功上线到网站')
             else:
                 # push 失败，manifest 不动（保持 ready），文章不消失
-                self.redirect_msg('/admin/draft', 'err', f'上站失败: {git_err}')
+                self.redirect_msg('/admin/pending', 'err', f'上站失败: {git_err}')
             return
 
         # ---- 重新发布（已上站文章重新套壳 + git push） ----
@@ -1145,7 +1232,7 @@ class AdminHandler(http.server.SimpleHTTPRequestHandler):
                     title = t
                 body_content = strip_title(src_content)
 
-            final_html = apply_master_template(body_content, title, '', section, sub_category)
+            final_html = apply_master_template(body_content, title, '', section, sub_category, slug=fname)
             pp = published_path(fname)
             write_file(os.path.relpath(pp, SITE_DIR).replace('\\', '/'), final_html)
             git_ok, git_err = git_push()
