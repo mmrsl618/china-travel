@@ -132,4 +132,28 @@
     <changefreq>monthly</changefreq>
     <lastmod>2026-06-29</lastmod>
   </url>
+  <url>
+    <loc>https://visitchinatips.com/articles/china-travel-budget/article.html</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/about.html</loc>
+    <priority>0.4</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-07-01</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/contact.html</loc>
+    <priority>0.4</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-07-01</lastmod>
+  </url>
+  <url>
+    <loc>https://visitchinatips.com/privacy.html</loc>
+    <priority>0.4</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-07-01</lastmod>
+  </url>
 </urlset>
