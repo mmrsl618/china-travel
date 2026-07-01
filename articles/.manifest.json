@@ -106,5 +106,10 @@
     "section": "explore",
     "status": "online",
     "sub_category": "itineraries"
+  },
+  "china-travel-budget": {
+    "title": "China Travel Budget Guide: How Much Does a Trip Cost (2026)",
+    "section": "before-you-go",
+    "status": "ready"
   }
 }
